@@ -3,6 +3,7 @@ package skk
 import (
 	"context"
 	"strings"
+	"unicode"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
@@ -84,6 +85,32 @@ func cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
 	return cmdVowels(ctx, B, 4)
 }
 
+const henkanMarker = "▽"
+
+type henkanStart byte
+
+func (h henkanStart) String() string {
+	return string(h)
+}
+
+func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	rl.SelfInserter(henkanMarker).Call(ctx, B)
+	rl.CmdForwardChar.Call(ctx, B)
+	switch h {
+	case 'a':
+		return cmdA(ctx, B)
+	case 'i':
+		return cmdA(ctx, B)
+	case 'u':
+		return cmdA(ctx, B)
+	case 'e':
+		return cmdA(ctx, B)
+	case 'o':
+		return cmdA(ctx, B)
+	}
+	return rl.SelfInserter(string(h)).Call(ctx, B)
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -92,12 +119,16 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("o", rl.AnonymousCommand(cmdO))
 	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdDisableRomaji))
+
+	for _, c := range "AIUEOKSTNHMYRWF" {
+		B.BindKey(keys.Code(string(c)), henkanStart(byte(unicode.ToLower(c))))
+	}
 	return rl.CONTINUE
 }
 
 func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	for _, s := range []string{"a", "i", "u", "e", "o", "l"} {
-		B.BindKey(keys.Code(s), rl.SelfInserter(s))
+	for _, s := range "aiueolAIUEOKSTNHMYRWF" {
+		B.BindKey(keys.Code(string(s)), rl.SelfInserter(string(s)))
 	}
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
