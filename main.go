@@ -100,13 +100,13 @@ func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	case 'a':
 		return cmdA(ctx, B)
 	case 'i':
-		return cmdA(ctx, B)
+		return cmdI(ctx, B)
 	case 'u':
-		return cmdA(ctx, B)
+		return cmdU(ctx, B)
 	case 'e':
-		return cmdA(ctx, B)
+		return cmdE(ctx, B)
 	case 'o':
-		return cmdA(ctx, B)
+		return cmdO(ctx, B)
 	}
 	return rl.SelfInserter(string(h)).Call(ctx, B)
 }
