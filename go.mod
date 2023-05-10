@@ -2,7 +2,10 @@ module github.com/hymkor/go-readline-skk
 
 go 1.20
 
-require github.com/nyaosorg/go-readline-ny v0.11.6
+require (
+	github.com/nyaosorg/go-readline-ny v0.11.6
+	golang.org/x/text v0.9.0
+)
 
 require (
 	github.com/atotto/clipboard v0.1.4 // indirect

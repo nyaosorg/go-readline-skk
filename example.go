@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/hymkor/go-readline-skk"
+	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
 )
 
 func main() {
+	skk.Setup("SKK-JISYO.L")
+
 	var ed readline.Editor
 	text, err := ed.ReadLine(context.Background())
 	if err != nil {

@@ -1,9 +1,15 @@
 package skk
 
 import (
+	"bufio"
 	"context"
+	"errors"
+	"io"
+	"os"
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/encoding/japanese"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
@@ -44,20 +50,24 @@ func romajiToKana3char(ctx context.Context, B *rl.Buffer, kana string) rl.Result
 	return rl.SelfInserter(kana).Call(ctx, B)
 }
 
+func toString(s ...io.WriterTo) string {
+	var buffer strings.Builder
+	for _, s1 := range s {
+		s1.WriteTo(&buffer)
+	}
+	return buffer.String()
+}
+
 func cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
-		var buffer strings.Builder
-		B.Buffer[B.Cursor-2].Moji.WriteTo(&buffer)
-		B.Buffer[B.Cursor-1].Moji.WriteTo(&buffer)
-		shiin := buffer.String()
+		shiin := toString(B.Buffer[B.Cursor-2].Moji,
+			B.Buffer[B.Cursor-1].Moji)
 		if kana, ok := romajiTable3[shiin]; ok {
 			return romajiToKana3char(ctx, B, kana[aiueo])
 		}
 	}
 	if B.Cursor >= 1 {
-		var buffer strings.Builder
-		B.Buffer[B.Cursor-1].Moji.WriteTo(&buffer)
-		shiin := buffer.String()
+		shiin := toString(B.Buffer[B.Cursor-1].Moji)
 		if kana, ok := romajiTable2[shiin]; ok {
 			return romajiToKana2char(ctx, B, kana[aiueo])
 		}
@@ -85,7 +95,10 @@ func cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
 	return cmdVowels(ctx, B, 4)
 }
 
-const henkanMarker = "▽"
+const (
+	markerWhite = "▽"
+	markerBlack = "▼"
+)
 
 type henkanStart byte
 
@@ -94,7 +107,7 @@ func (h henkanStart) String() string {
 }
 
 func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	rl.SelfInserter(henkanMarker).Call(ctx, B)
+	rl.SelfInserter(markerWhite).Call(ctx, B)
 	rl.CmdForwardChar.Call(ctx, B)
 	switch h {
 	case 'a':
@@ -111,6 +124,70 @@ func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.SelfInserter(string(h)).Call(ctx, B)
 }
 
+func seekMarker(B *rl.Buffer) int {
+	for i := B.Cursor - 1; i >= 0; i-- {
+		ch := toString(B.Buffer[i].Moji)
+		if ch == markerWhite || ch == markerBlack {
+			return i
+		}
+	}
+	return -1
+}
+
+var jisyo map[string][]string
+
+func removeOne(B *rl.Buffer, pos int) {
+	copy(B.Buffer[pos:], B.Buffer[pos+1:])
+	B.Buffer = B.Buffer[:len(B.Buffer)-1]
+	B.Cursor--
+	B.RepaintAfterPrompt()
+}
+
+func cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
+	markerPos := seekMarker(B)
+	if markerPos < 0 {
+		return rl.SelfInserter(" ").Call(ctx, B)
+	}
+	var buffer strings.Builder
+	for i := markerPos + 1; i < B.Cursor; i++ {
+		B.Buffer[i].Moji.WriteTo(&buffer)
+	}
+	source := buffer.String()
+
+	list, found := jisyo[source]
+	if !found {
+		// 本来であれば辞書登録モード
+		return rl.SelfInserter(" ").Call(ctx, B)
+	}
+	current := 0
+	B.ReplaceAndRepaint(markerPos, "▼"+list[current])
+	for {
+		B.Out.Flush()
+		input, _ := B.GetKey()
+		if input < " " {
+			removeOne(B, markerPos)
+			return rl.CONTINUE
+		} else if input == " " {
+			current++
+			if current >= len(list) {
+				current = 0
+			}
+			B.ReplaceAndRepaint(markerPos, "▼"+list[current])
+		} else {
+			removeOne(B, markerPos)
+			code := keys.Code(input)
+			cmd, ok := B.KeyMap.KeyMap[code]
+			if !ok {
+				cmd, ok = rl.GlobalKeyMap.KeyMap[code]
+				if !ok {
+					cmd = rl.SelfInserter(input)
+				}
+			}
+			return cmd.Call(ctx, B)
+		}
+	}
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -119,6 +196,7 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("o", rl.AnonymousCommand(cmdO))
 	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdDisableRomaji))
+	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 
 	for _, c := range "AIUEOKSTNHMYRWF" {
 		B.BindKey(keys.Code(string(c)), henkanStart(byte(unicode.ToLower(c))))
@@ -134,6 +212,59 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func init() {
-	rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
+func loadJisyo(filename string) (map[string][]string, error) {
+	fd, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	decoder := japanese.EUCJP.NewDecoder()
+
+	return readJisyo(decoder.Reader(fd))
+}
+
+func readJisyo(r io.Reader) (map[string][]string, error) {
+	jisyo := map[string][]string{}
+
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
+		if len(line) <= 0 || line[0] == ';' {
+			continue
+		}
+		source, lists, ok := strings.Cut(line, " /")
+		if !ok {
+			continue
+		}
+		values := []string{}
+		for {
+			one, rest, ok := strings.Cut(lists, "/")
+			one, _, _ = strings.Cut(one, ";")
+			values = append(values, one)
+			if !ok {
+				break
+			}
+			lists = rest
+		}
+		jisyo[source] = values
+	}
+	return jisyo, sc.Err()
+}
+
+var ErrJisyoNotFound = errors.New("Jisyo not found")
+
+func Setup(jisyoFilenames ...string) error {
+	var err error
+	for _, fn := range jisyoFilenames {
+		jisyo, err = loadJisyo(fn)
+		if err == nil {
+			rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
+			return nil
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return ErrJisyoNotFound
 }
