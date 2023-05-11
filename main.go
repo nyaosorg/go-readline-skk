@@ -264,6 +264,8 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 	B.BindKey("n", rl.AnonymousCommand(cmdN))
+	B.BindKey(",", rl.SelfInserter("、"))
+	B.BindKey(".", rl.SelfInserter("。"))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
@@ -287,6 +289,8 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 		s := string(byte(i))
 		B.BindKey(keys.Code(s), rl.SelfInserter(s))
 	}
+	B.BindKey(",", rl.SelfInserter("、"))
+	B.BindKey(".", rl.SelfInserter("。"))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
 }
