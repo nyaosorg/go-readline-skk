@@ -244,6 +244,16 @@ func (s smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CmdForwardChar.Call(ctx, B)
 }
 
+func cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
+	markerPos := seekMarker(B)
+	if markerPos < 0 {
+		return cmdDisableRomaji(ctx, B)
+	}
+	// kakutei
+	removeOne(B, markerPos)
+	return rl.CONTINUE
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -251,7 +261,7 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("e", rl.AnonymousCommand(cmdE))
 	B.BindKey("o", rl.AnonymousCommand(cmdO))
 	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdDisableRomaji))
+	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 	B.BindKey("n", rl.AnonymousCommand(cmdN))
 
