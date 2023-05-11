@@ -120,7 +120,7 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 		return rl.SelfInserter(" ").Call(ctx, B)
 	}
 	current := 0
-	B.ReplaceAndRepaint(markerPos, "▼"+list[current]+postfix)
+	B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 	for {
 		B.Out.Flush()
 		input, _ := B.GetKey()
@@ -132,7 +132,14 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 			if current >= len(list) {
 				current = 0
 			}
-			B.ReplaceAndRepaint(markerPos, "▼"+list[current]+postfix)
+			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
+		} else if input == "x" {
+			current--
+			if current < 0 {
+				B.ReplaceAndRepaint(markerPos, markerWhite+source)
+				return rl.CONTINUE
+			}
+			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 		} else {
 			removeOne(B, markerPos)
 			return eval(ctx, B, input)
