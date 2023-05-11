@@ -120,7 +120,6 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 	current := 0
 	B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 	for {
-		B.Out.Flush()
 		input, _ := B.GetKey()
 		if input < " " {
 			removeOne(B, markerPos)
@@ -222,7 +221,6 @@ func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
 
 func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	rl.SelfInserter("n").Call(ctx, B)
-	B.Out.Flush()
 	input, _ := B.GetKey()
 	switch input {
 	case "n":
