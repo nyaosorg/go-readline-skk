@@ -60,12 +60,6 @@ func romajiToKana3char(ctx context.Context, B *rl.Buffer, kana string) rl.Result
 	return rl.SelfInserter(kana).Call(ctx, B)
 }
 
-func toString(s io.WriterTo) string {
-	var buffer strings.Builder
-	s.WriteTo(&buffer)
-	return buffer.String()
-}
-
 func cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
 		shiin := B.SubString(B.Cursor-2, B.Cursor)
@@ -74,7 +68,7 @@ func cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 		}
 	}
 	if B.Cursor >= 1 {
-		shiin := toString(B.Buffer[B.Cursor-1].Moji)
+		shiin := B.Buffer[B.Cursor-1].String()
 		if kana, ok := romajiTable2[shiin]; ok {
 			return romajiToKana2char(ctx, B, kana[aiueo])
 		}
@@ -187,7 +181,7 @@ func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 
 func seekMarker(B *rl.Buffer) int {
 	for i := B.Cursor - 1; i >= 0; i-- {
-		ch := toString(B.Buffer[i].Moji)
+		ch := B.Buffer[i].String()
 		if ch == markerWhite || ch == markerBlack {
 			return i
 		}
@@ -250,7 +244,7 @@ func (s smallTsuChecker) String() string {
 }
 
 func (s smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	if B.Cursor <= 0 || toString(B.Buffer[B.Cursor-1].Moji) != string(s) {
+	if B.Cursor <= 0 || B.Buffer[B.Cursor-1].String() != string(s) {
 		return rl.SelfInserter(string(s)).Call(ctx, B)
 	}
 	rl.CmdBackwardChar.Call(ctx, B)
