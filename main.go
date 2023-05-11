@@ -34,6 +34,7 @@ var romajiTable2 = map[string][]string{
 	"d": []string{"だ", "ぢ", "づ", "で", "ど"},
 	"b": []string{"ば", "び", "ぶ", "べ", "ぼ"},
 	"p": []string{"ぱ", "ぴ", "ぷ", "ぺ", "ぽ"},
+	"j": []string{"じゃ", "じ", "じゅ", "じぇ", "じょ"},
 }
 
 var romajiTable3 = map[string][]string{
@@ -41,6 +42,7 @@ var romajiTable3 = map[string][]string{
 	"sh": []string{"しゃ", "し", "しゅ", "しぇ", "しょ"},
 	"sy": []string{"しゃ", "しぃ", "しゅ", "しぇ", "しょ"},
 	"ty": []string{"ちゃ", "ちぃ", "ちゅ", "ちぇ", "ちょ"},
+	"ch": []string{"ちゃ", "ち", "ちゅ", "ちぇ", "ちょ"},
 	"ny": []string{"にゃ", "にぃ", "にゅ", "にぇ", "にょ"},
 	"hy": []string{"ひゃ", "ひぃ", "ひゅ", "ひぇ", "ひょ"},
 	"my": []string{"みゃ", "みぃ", "みゅ", "みぇ", "みょ"},
@@ -246,12 +248,12 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 	B.BindKey("n", rl.AnonymousCommand(cmdN))
 
-	const upperRomaji = "AIUEOKSTNHMYRWFGZDBP"
+	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
 		B.BindKey(keys.Code(upperRomaji[i:i+1]), henkanStart(byte(unicode.ToLower(c))))
 	}
 
-	const consonantButN = "ksthmyrwfgzdbp"
+	const consonantButN = "ksthmyrwfgzdbpcj"
 	for i := range consonantButN {
 		s := consonantButN[i : i+1]
 		B.BindKey(keys.Code(s), smallTsuChecker(s))
