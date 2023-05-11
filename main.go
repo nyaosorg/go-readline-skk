@@ -58,18 +58,15 @@ func romajiToKana3char(ctx context.Context, B *rl.Buffer, kana string) rl.Result
 	return rl.SelfInserter(kana).Call(ctx, B)
 }
 
-func toString(s ...io.WriterTo) string {
+func toString(s io.WriterTo) string {
 	var buffer strings.Builder
-	for _, s1 := range s {
-		s1.WriteTo(&buffer)
-	}
+	s.WriteTo(&buffer)
 	return buffer.String()
 }
 
 func cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
-		shiin := toString(B.Buffer[B.Cursor-2].Moji,
-			B.Buffer[B.Cursor-1].Moji)
+		shiin := B.SubString(B.Cursor-2, B.Cursor)
 		if kana, ok := romajiTable3[shiin]; ok {
 			return romajiToKana3char(ctx, B, kana[aiueo])
 		}
@@ -114,7 +111,40 @@ func (h henkanStart) String() string {
 	return string(h)
 }
 
+func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
+	list, found := jisyo[source]
+	if !found {
+		// 本来であれば辞書登録モード
+		return rl.SelfInserter(" ").Call(ctx, B)
+	}
+	current := 0
+	B.ReplaceAndRepaint(markerPos, "▼"+list[current]+postfix)
+	for {
+		B.Out.Flush()
+		input, _ := B.GetKey()
+		if input < " " {
+			removeOne(B, markerPos)
+			return rl.CONTINUE
+		} else if input == " " {
+			current++
+			if current >= len(list) {
+				current = 0
+			}
+			B.ReplaceAndRepaint(markerPos, "▼"+list[current]+postfix)
+		} else {
+			removeOne(B, markerPos)
+			return eval(ctx, B, input)
+		}
+	}
+}
+
 func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	if markerPos := seekMarker(B); markerPos >= 0 {
+		// 送り仮名つき変換
+		postfix := string(unicode.ToLower(rune(h)))
+		source := B.SubString(markerPos+1, B.Cursor) + postfix
+		return henkanMode(ctx, B, markerPos, source, postfix)
+	}
 	rl.SelfInserter(markerWhite).Call(ctx, B)
 	rl.CmdForwardChar.Call(ctx, B)
 	switch h {
@@ -156,36 +186,9 @@ func cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 	if markerPos < 0 {
 		return rl.SelfInserter(" ").Call(ctx, B)
 	}
-	var buffer strings.Builder
-	for i := markerPos + 1; i < B.Cursor; i++ {
-		B.Buffer[i].Moji.WriteTo(&buffer)
-	}
-	source := buffer.String()
+	source := B.SubString(markerPos+1, B.Cursor)
 
-	list, found := jisyo[source]
-	if !found {
-		// 本来であれば辞書登録モード
-		return rl.SelfInserter(" ").Call(ctx, B)
-	}
-	current := 0
-	B.ReplaceAndRepaint(markerPos, "▼"+list[current])
-	for {
-		B.Out.Flush()
-		input, _ := B.GetKey()
-		if input < " " {
-			removeOne(B, markerPos)
-			return rl.CONTINUE
-		} else if input == " " {
-			current++
-			if current >= len(list) {
-				current = 0
-			}
-			B.ReplaceAndRepaint(markerPos, "▼"+list[current])
-		} else {
-			removeOne(B, markerPos)
-			return eval(ctx, B, input)
-		}
-	}
+	return henkanMode(ctx, B, markerPos, source, "")
 }
 
 func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
