@@ -324,7 +324,9 @@ func readJisyo(r io.Reader) (map[string][]string, error) {
 		for {
 			one, rest, ok := strings.Cut(lists, "/")
 			one, _, _ = strings.Cut(one, ";")
-			values = append(values, one)
+			if one != "" {
+				values = append(values, one)
+			}
 			if !ok {
 				break
 			}
