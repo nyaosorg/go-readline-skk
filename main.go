@@ -199,6 +199,23 @@ func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
 	return cmd.Call(ctx, B)
 }
 
+func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
+	rl.SelfInserter("n").Call(ctx, B)
+	B.Out.Flush()
+	input, _ := B.GetKey()
+	switch input {
+	case "n":
+		rl.CmdBackwardDeleteChar.Call(ctx, B)
+		return rl.SelfInserter("ん").Call(ctx, B)
+	case "a", "i", "u", "e", "o", "y":
+		return eval(ctx, B, input)
+	default:
+		rl.CmdBackwardDeleteChar.Call(ctx, B)
+		rl.SelfInserter("ん").Call(ctx, B)
+		return eval(ctx, B, input)
+	}
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -208,6 +225,7 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdDisableRomaji))
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
+	B.BindKey("n", rl.AnonymousCommand(cmdN))
 
 	for _, c := range "AIUEOKSTNHMYRWF" {
 		B.BindKey(keys.Code(string(c)), henkanStart(byte(unicode.ToLower(c))))
@@ -219,6 +237,7 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	for _, s := range "aiueolAIUEOKSTNHMYRWF" {
 		B.BindKey(keys.Code(string(s)), rl.SelfInserter(string(s)))
 	}
+	B.BindKey("n", rl.SelfInserter("n"))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
 }
