@@ -113,6 +113,10 @@ func (h henkanStart) String() string {
 	return string(h)
 }
 
+func newKouho(ctx context.Context, source string) (string, bool) {
+	return "", false
+}
+
 func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
 	list, found := jisyo[source]
 	if !found {
@@ -130,7 +134,17 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 		} else if input == " " {
 			current++
 			if current >= len(list) {
-				current = 0
+				// 辞書登録モード
+				result, ok := newKouho(ctx, source)
+				if ok {
+					// 新変換文字列を展開する
+					B.ReplaceAndRepaint(markerPos, result)
+					return rl.CONTINUE
+				} else {
+					// 変換前に一旦戻す
+					B.ReplaceAndRepaint(markerPos, markerWhite+source)
+					return rl.CONTINUE
+				}
 			}
 			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 		} else if input == "x" {
