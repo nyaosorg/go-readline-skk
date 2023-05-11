@@ -289,14 +289,14 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	for i := 'a'; i <= 'z'; i++ {
 		s := string(byte(i))
-		B.BindKey(keys.Code(s), rl.SelfInserter(s))
+		B.BindKey(keys.Code(s), nil)
 	}
 	for i := 'A'; i <= 'Z'; i++ {
 		s := string(byte(i))
-		B.BindKey(keys.Code(s), rl.SelfInserter(s))
+		B.BindKey(keys.Code(s), nil)
 	}
-	B.BindKey(",", rl.SelfInserter("、"))
-	B.BindKey(".", rl.SelfInserter("。"))
+	B.BindKey(",", nil)
+	B.BindKey(".", nil)
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
 }
