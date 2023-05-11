@@ -182,17 +182,21 @@ func cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 			B.ReplaceAndRepaint(markerPos, "▼"+list[current])
 		} else {
 			removeOne(B, markerPos)
-			code := keys.Code(input)
-			cmd, ok := B.KeyMap.KeyMap[code]
-			if !ok {
-				cmd, ok = rl.GlobalKeyMap.KeyMap[code]
-				if !ok {
-					cmd = rl.SelfInserter(input)
-				}
-			}
-			return cmd.Call(ctx, B)
+			return eval(ctx, B, input)
 		}
 	}
+}
+
+func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
+	code := keys.Code(input)
+	cmd, ok := B.KeyMap.KeyMap[code]
+	if !ok {
+		cmd, ok = rl.GlobalKeyMap.KeyMap[code]
+		if !ok {
+			cmd = rl.SelfInserter(input)
+		}
+	}
+	return cmd.Call(ctx, B)
 }
 
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
