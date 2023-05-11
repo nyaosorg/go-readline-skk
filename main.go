@@ -44,6 +44,7 @@ var romajiTable3 = map[string][]string{
 	"ny": []string{"にゃ", "にぃ", "にゅ", "にぇ", "にょ"},
 	"hy": []string{"ひゃ", "ひぃ", "ひゅ", "ひぇ", "ひょ"},
 	"my": []string{"みゃ", "みぃ", "みゅ", "みぇ", "みょ"},
+	"ry": []string{"りゃ", "りぃ", "りゅ", "りぇ", "りょ"},
 }
 
 func romajiToKana2char(ctx context.Context, B *rl.Buffer, kana string) rl.Result {
