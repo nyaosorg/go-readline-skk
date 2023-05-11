@@ -216,6 +216,21 @@ func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	}
 }
 
+type smallTsuChecker string
+
+func (s smallTsuChecker) String() string {
+	return "small tsu checker for " + string(s)
+}
+
+func (s smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	if B.Cursor <= 0 || toString(B.Buffer[B.Cursor-1].Moji) != string(s) {
+		return rl.SelfInserter(string(s)).Call(ctx, B)
+	}
+	rl.CmdBackwardChar.Call(ctx, B)
+	rl.SelfInserter("っ").Call(ctx, B)
+	return rl.CmdForwardChar.Call(ctx, B)
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -227,17 +242,28 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 	B.BindKey("n", rl.AnonymousCommand(cmdN))
 
-	for _, c := range "AIUEOKSTNHMYRWF" {
-		B.BindKey(keys.Code(string(c)), henkanStart(byte(unicode.ToLower(c))))
+	const upperRomaji = "AIUEOKSTNHMYRWFGZDBP"
+	for i, c := range upperRomaji {
+		B.BindKey(keys.Code(upperRomaji[i:i+1]), henkanStart(byte(unicode.ToLower(c))))
+	}
+
+	const consonantButN = "ksthmyrwfgzdbp"
+	for i := range consonantButN {
+		s := consonantButN[i : i+1]
+		B.BindKey(keys.Code(s), smallTsuChecker(s))
 	}
 	return rl.CONTINUE
 }
 
 func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	for _, s := range "aiueolAIUEOKSTNHMYRWF" {
-		B.BindKey(keys.Code(string(s)), rl.SelfInserter(string(s)))
+	for i := 'a'; i <= 'z'; i++ {
+		s := string(byte(i))
+		B.BindKey(keys.Code(s), rl.SelfInserter(s))
 	}
-	B.BindKey("n", rl.SelfInserter("n"))
+	for i := 'A'; i <= 'Z'; i++ {
+		s := string(byte(i))
+		B.BindKey(keys.Code(s), rl.SelfInserter(s))
+	}
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
 }
