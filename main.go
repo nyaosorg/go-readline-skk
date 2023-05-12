@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -107,15 +108,39 @@ func (h henkanStart) String() string {
 	return string(h)
 }
 
-func newKouho(ctx context.Context, source string) (string, bool) {
-	return "", false
+func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
+	B.Out.WriteString("\x1B[?25h")
+	B.Out.Flush()
+	inputNewWord := &rl.Editor{
+		PromptWriter: func(w io.Writer) (int, error) {
+			return fmt.Fprintf(w, "\n%s ", source)
+		},
+		Writer:   B.Writer,
+		LineFeed: func(rl.Result) {},
+	}
+	newWord, err := inputNewWord.ReadLine(ctx)
+	B.Out.WriteString("\r\x1B[K\x1B[A")
+	B.RepaintAfterPrompt()
+	if err != nil || len(newWord) <= 0 {
+		return "", false
+	}
+	return newWord, true
 }
 
 func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
 	list, found := jisyo[source]
 	if !found {
-		// 本来であれば辞書登録モード
-		return rl.SelfInserter(" ").Call(ctx, B)
+		// 辞書登録モード
+		result, ok := newCandidate(ctx, B, source)
+		if ok {
+			// 新変換文字列を展開する
+			B.ReplaceAndRepaint(markerPos, result)
+			return rl.CONTINUE
+		} else {
+			// 変換前に一旦戻す
+			B.ReplaceAndRepaint(markerPos, markerWhite+source)
+			return rl.CONTINUE
+		}
 	}
 	current := 0
 	B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
@@ -128,7 +153,7 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 			current++
 			if current >= len(list) {
 				// 辞書登録モード
-				result, ok := newKouho(ctx, source)
+				result, ok := newCandidate(ctx, B, source)
 				if ok {
 					// 新変換文字列を展開する
 					B.ReplaceAndRepaint(markerPos, result)
