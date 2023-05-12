@@ -208,15 +208,7 @@ func cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 }
 
 func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
-	code := keys.Code(input)
-	cmd, ok := B.KeyMap.KeyMap[code]
-	if !ok {
-		cmd, ok = rl.GlobalKeyMap.KeyMap[code]
-		if !ok {
-			cmd = rl.SelfInserter(input)
-		}
-	}
-	return cmd.Call(ctx, B)
+	return B.LookupCommand(input).Call(ctx, B)
 }
 
 func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
