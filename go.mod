@@ -3,7 +3,7 @@ module github.com/hymkor/go-readline-skk
 go 1.20
 
 require (
-	github.com/nyaosorg/go-readline-ny v0.11.6
+	github.com/nyaosorg/go-readline-ny v0.11.7
 	golang.org/x/text v0.9.0
 )
 
