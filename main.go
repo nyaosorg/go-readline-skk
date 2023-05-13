@@ -24,38 +24,92 @@ var (
 	userJisyo   = map[string][]string{}
 )
 
-var romajiTable1 = []string{"あ", "い", "う", "え", "お"}
-
-var romajiTable2 = map[string][]string{
-	"k": []string{"か", "き", "く", "け", "こ"},
-	"s": []string{"さ", "し", "す", "せ", "そ"},
-	"t": []string{"た", "ち", "つ", "て", "と"},
-	"n": []string{"な", "に", "ぬ", "ね", "の"},
-	"h": []string{"は", "ひ", "ふ", "へ", "ほ"},
-	"m": []string{"ま", "み", "む", "め", "も"},
-	"y": []string{"や", "い", "ゆ", "いぇ", "よ"},
-	"r": []string{"ら", "り", "る", "れ", "ろ"},
-	"w": []string{"わ", "うぃ", "う", "うぇ", "を"},
-	"f": []string{"ふぁ", "ふぃ", "ふ", "ふぇ", "ふぉ"},
-	"x": []string{"ぁ", "ぃ", "ぅ", "ぇ", "ぉ"},
-	"g": []string{"が", "ぎ", "ぐ", "げ", "ご"},
-	"z": []string{"ざ", "じ", "ず", "ぜ", "ぞ"},
-	"d": []string{"だ", "ぢ", "づ", "で", "ど"},
-	"b": []string{"ば", "び", "ぶ", "べ", "ぼ"},
-	"p": []string{"ぱ", "ぴ", "ぷ", "ぺ", "ぽ"},
-	"j": []string{"じゃ", "じ", "じゅ", "じぇ", "じょ"},
+type Kana struct {
+	table1   []string
+	table2   map[string][]string
+	table3   map[string][]string
+	n        string
+	tsu      string
+	switchTo int
 }
 
-var romajiTable3 = map[string][]string{
-	"ky": []string{"きゃ", "きぃ", "きゅ", "きぇ", "きょ"},
-	"sh": []string{"しゃ", "し", "しゅ", "しぇ", "しょ"},
-	"sy": []string{"しゃ", "しぃ", "しゅ", "しぇ", "しょ"},
-	"ty": []string{"ちゃ", "ちぃ", "ちゅ", "ちぇ", "ちょ"},
-	"ch": []string{"ちゃ", "ち", "ちゅ", "ちぇ", "ちょ"},
-	"ny": []string{"にゃ", "にぃ", "にゅ", "にぇ", "にょ"},
-	"hy": []string{"ひゃ", "ひぃ", "ひゅ", "ひぇ", "ひょ"},
-	"my": []string{"みゃ", "みぃ", "みゅ", "みぇ", "みょ"},
-	"ry": []string{"りゃ", "りぃ", "りゅ", "りぇ", "りょ"},
+var kanaTable = []*Kana{
+	hiragana,
+	katakana,
+}
+
+var hiragana = &Kana{
+	table1: []string{"あ", "い", "う", "え", "お"},
+	table2: map[string][]string{
+		"k": []string{"か", "き", "く", "け", "こ"},
+		"s": []string{"さ", "し", "す", "せ", "そ"},
+		"t": []string{"た", "ち", "つ", "て", "と"},
+		"n": []string{"な", "に", "ぬ", "ね", "の"},
+		"h": []string{"は", "ひ", "ふ", "へ", "ほ"},
+		"m": []string{"ま", "み", "む", "め", "も"},
+		"y": []string{"や", "い", "ゆ", "いぇ", "よ"},
+		"r": []string{"ら", "り", "る", "れ", "ろ"},
+		"w": []string{"わ", "うぃ", "う", "うぇ", "を"},
+		"f": []string{"ふぁ", "ふぃ", "ふ", "ふぇ", "ふぉ"},
+		"x": []string{"ぁ", "ぃ", "ぅ", "ぇ", "ぉ"},
+		"g": []string{"が", "ぎ", "ぐ", "げ", "ご"},
+		"z": []string{"ざ", "じ", "ず", "ぜ", "ぞ"},
+		"d": []string{"だ", "ぢ", "づ", "で", "ど"},
+		"b": []string{"ば", "び", "ぶ", "べ", "ぼ"},
+		"p": []string{"ぱ", "ぴ", "ぷ", "ぺ", "ぽ"},
+		"j": []string{"じゃ", "じ", "じゅ", "じぇ", "じょ"},
+	},
+	table3: map[string][]string{
+		"ky": []string{"きゃ", "きぃ", "きゅ", "きぇ", "きょ"},
+		"sh": []string{"しゃ", "し", "しゅ", "しぇ", "しょ"},
+		"sy": []string{"しゃ", "しぃ", "しゅ", "しぇ", "しょ"},
+		"ty": []string{"ちゃ", "ちぃ", "ちゅ", "ちぇ", "ちょ"},
+		"ch": []string{"ちゃ", "ち", "ちゅ", "ちぇ", "ちょ"},
+		"ny": []string{"にゃ", "にぃ", "にゅ", "にぇ", "にょ"},
+		"hy": []string{"ひゃ", "ひぃ", "ひゅ", "ひぇ", "ひょ"},
+		"my": []string{"みゃ", "みぃ", "みゅ", "みぇ", "みょ"},
+		"ry": []string{"りゃ", "りぃ", "りゅ", "りぇ", "りょ"},
+	},
+	n:        "ん",
+	tsu:      "っ",
+	switchTo: 1,
+}
+
+var katakana = &Kana{
+	table1: []string{"ア", "イ", "ウ", "エ", "オ"},
+	table2: map[string][]string{
+		"k": []string{"カ", "キ", "ク", "ケ", "コ"},
+		"s": []string{"サ", "シ", "ス", "セ", "ソ"},
+		"t": []string{"タ", "チ", "ツ", "テ", "ト"},
+		"n": []string{"ナ", "ニ", "ヌ", "ネ", "ノ"},
+		"h": []string{"ハ", "ヒ", "フ", "ヘ", "ホ"},
+		"m": []string{"マ", "ミ", "ム", "メ", "モ"},
+		"y": []string{"ヤ", "イ", "ユ", "イェ", "ヨ"},
+		"r": []string{"ラ", "リ", "ル", "レ", "ロ"},
+		"w": []string{"ワ", "ウィ", "ウ", "ウェ", "ヲ"},
+		"f": []string{"ファ", "フィ", "フ", "フェ", "フォ"},
+		"x": []string{"ァ", "ィ", "ゥ", "ェ", "ォ"},
+		"g": []string{"ガ", "ギ", "グ", "ゲ", "ゴ"},
+		"z": []string{"ザ", "ジ", "ズ", "ゼ", "ゾ"},
+		"d": []string{"ダ", "ジ", "ヅ", "デ", "ド"},
+		"b": []string{"バ", "ビ", "ブ", "ベ", "ボ"},
+		"p": []string{"パ", "ピ", "プ", "ペ", "ポ"},
+		"j": []string{"ジャ", "ジ", "ジュ", "ジェ", "ジョ"},
+	},
+	table3: map[string][]string{
+		"ky": []string{"キャ", "キ", "キュ", "キェ", "キョ"},
+		"sh": []string{"シャ", "シ", "シュ", "シェ", "ショ"},
+		"sy": []string{"シャ", "シィ", "シュ", "シェ", "ショ"},
+		"ty": []string{"チャ", "チィ", "チュ", "チェ", "チョ"},
+		"ch": []string{"チャ", "チ", "チュ", "チェ", "チョ"},
+		"ny": []string{"ニャ", "ニィ", "ニュ", "ニェ", "ニョ"},
+		"hy": []string{"ヒャ", "ヒィ", "ヒュ", "ヒェ", "ヒョ"},
+		"my": []string{"ミャ", "ミ", "ミュ", "ミェ", "ミョ"},
+		"ry": []string{"リャ", "リィ", "リュ", "リェ", "リョ"},
+	},
+	n:        "ン",
+	tsu:      "ッ",
+	switchTo: 0,
 }
 
 func romajiToKana2char(ctx context.Context, B *rl.Buffer, kana string) rl.Result {
@@ -69,40 +123,40 @@ func romajiToKana3char(ctx context.Context, B *rl.Buffer, kana string) rl.Result
 	return rl.SelfInserter(kana).Call(ctx, B)
 }
 
-func cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
+func (K *Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
 		shiin := B.SubString(B.Cursor-2, B.Cursor)
-		if kana, ok := romajiTable3[shiin]; ok {
+		if kana, ok := K.table3[shiin]; ok {
 			return romajiToKana3char(ctx, B, kana[aiueo])
 		}
 	}
 	if B.Cursor >= 1 {
 		shiin := B.Buffer[B.Cursor-1].String()
-		if kana, ok := romajiTable2[shiin]; ok {
+		if kana, ok := K.table2[shiin]; ok {
 			return romajiToKana2char(ctx, B, kana[aiueo])
 		}
 	}
-	return rl.SelfInserter(romajiTable1[aiueo]).Call(ctx, B)
+	return rl.SelfInserter(K.table1[aiueo]).Call(ctx, B)
 }
 
-func cmdA(ctx context.Context, B *rl.Buffer) rl.Result {
-	return cmdVowels(ctx, B, 0)
+func (K *Kana) cmdA(ctx context.Context, B *rl.Buffer) rl.Result {
+	return K.cmdVowels(ctx, B, 0)
 }
 
-func cmdI(ctx context.Context, B *rl.Buffer) rl.Result {
-	return cmdVowels(ctx, B, 1)
+func (K *Kana) cmdI(ctx context.Context, B *rl.Buffer) rl.Result {
+	return K.cmdVowels(ctx, B, 1)
 }
 
-func cmdU(ctx context.Context, B *rl.Buffer) rl.Result {
-	return cmdVowels(ctx, B, 2)
+func (K *Kana) cmdU(ctx context.Context, B *rl.Buffer) rl.Result {
+	return K.cmdVowels(ctx, B, 2)
 }
 
-func cmdE(ctx context.Context, B *rl.Buffer) rl.Result {
-	return cmdVowels(ctx, B, 3)
+func (K *Kana) cmdE(ctx context.Context, B *rl.Buffer) rl.Result {
+	return K.cmdVowels(ctx, B, 3)
 }
 
-func cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
-	return cmdVowels(ctx, B, 4)
+func (K *Kana) cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
+	return K.cmdVowels(ctx, B, 4)
 }
 
 const (
@@ -110,10 +164,13 @@ const (
 	markerBlack = "▼"
 )
 
-type henkanStart byte
+type henkanStart struct {
+	H byte
+	K *Kana
+}
 
-func (h henkanStart) String() string {
-	return string(h)
+func (h *henkanStart) String() string {
+	return string(h.H)
 }
 
 func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
@@ -129,7 +186,7 @@ func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, er
 		},
 	}
 	if ime {
-		enableRomaji(inputNewWord)
+		hiragana.enableRomaji(inputNewWord)
 	}
 	return inputNewWord.ReadLine(ctx)
 }
@@ -238,28 +295,28 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 	}
 }
 
-func (h henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (h *henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	if markerPos := seekMarker(B); markerPos >= 0 {
 		// 送り仮名つき変換
-		postfix := string(unicode.ToLower(rune(h)))
+		postfix := string(unicode.ToLower(rune(h.H)))
 		source := B.SubString(markerPos+1, B.Cursor) + postfix
 		return henkanMode(ctx, B, markerPos, source, postfix)
 	}
 	rl.SelfInserter(markerWhite).Call(ctx, B)
 	rl.CmdForwardChar.Call(ctx, B)
-	switch h {
+	switch h.H {
 	case 'a':
-		return cmdA(ctx, B)
+		return h.K.cmdA(ctx, B)
 	case 'i':
-		return cmdI(ctx, B)
+		return h.K.cmdI(ctx, B)
 	case 'u':
-		return cmdU(ctx, B)
+		return h.K.cmdU(ctx, B)
 	case 'e':
-		return cmdE(ctx, B)
+		return h.K.cmdE(ctx, B)
 	case 'o':
-		return cmdO(ctx, B)
+		return h.K.cmdO(ctx, B)
 	}
-	return rl.SelfInserter(string(h)).Call(ctx, B)
+	return rl.SelfInserter(string(h.H)).Call(ctx, B)
 }
 
 func seekMarker(B *rl.Buffer) int {
@@ -295,13 +352,13 @@ func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
 	return B.LookupCommand(input).Call(ctx, B)
 }
 
-func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *Kana) cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	rl.SelfInserter("n").Call(ctx, B)
 	input, _ := B.GetKey()
 	switch input {
 	case "n":
 		rl.CmdBackwardDeleteChar.Call(ctx, B)
-		return rl.SelfInserter("ん").Call(ctx, B)
+		return rl.SelfInserter(K.n).Call(ctx, B)
 	case "a", "i", "u", "e", "o", "y":
 		return eval(ctx, B, input)
 	default:
@@ -311,18 +368,21 @@ func cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	}
 }
 
-type smallTsuChecker string
-
-func (s smallTsuChecker) String() string {
-	return "small tsu checker for " + string(s)
+type smallTsuChecker struct {
+	post string
+	tsu  string
 }
 
-func (s smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	if B.Cursor <= 0 || B.Buffer[B.Cursor-1].String() != string(s) {
-		return rl.SelfInserter(string(s)).Call(ctx, B)
+func (s *smallTsuChecker) String() string {
+	return "small tsu checker for " + s.post
+}
+
+func (s *smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	if B.Cursor <= 0 || B.Buffer[B.Cursor-1].String() != s.post {
+		return rl.SelfInserter(s.post).Call(ctx, B)
 	}
 	rl.CmdBackwardChar.Call(ctx, B)
-	rl.SelfInserter("っ").Call(ctx, B)
+	rl.SelfInserter(s.tsu).Call(ctx, B)
 	return rl.CmdForwardChar.Call(ctx, B)
 }
 
@@ -345,34 +405,40 @@ func cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
-	X.BindKey("a", rl.AnonymousCommand(cmdA))
-	X.BindKey("i", rl.AnonymousCommand(cmdI))
-	X.BindKey("u", rl.AnonymousCommand(cmdU))
-	X.BindKey("e", rl.AnonymousCommand(cmdE))
-	X.BindKey("o", rl.AnonymousCommand(cmdO))
+func (K *Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
+	kanaTable[K.switchTo].enableRomaji(B)
+	return rl.CONTINUE
+}
+
+func (K *Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
+	X.BindKey("a", rl.AnonymousCommand(K.cmdA))
+	X.BindKey("i", rl.AnonymousCommand(K.cmdI))
+	X.BindKey("u", rl.AnonymousCommand(K.cmdU))
+	X.BindKey("e", rl.AnonymousCommand(K.cmdE))
+	X.BindKey("o", rl.AnonymousCommand(K.cmdO))
 	X.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
 	X.BindKey(keys.CtrlG, rl.AnonymousCommand(cmdCtrlG))
 	X.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
 	X.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
-	X.BindKey("n", rl.AnonymousCommand(cmdN))
+	X.BindKey("n", rl.AnonymousCommand(K.cmdN))
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
+	X.BindKey("q", rl.AnonymousCommand(K.cmdQ))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		X.BindKey(keys.Code(upperRomaji[i:i+1]), henkanStart(byte(unicode.ToLower(c))))
+		X.BindKey(keys.Code(upperRomaji[i:i+1]), &henkanStart{H: byte(unicode.ToLower(c)), K: K})
 	}
 
 	const consonantButN = "ksthmyrwfgzdbpcj"
 	for i := range consonantButN {
 		s := consonantButN[i : i+1]
-		X.BindKey(keys.Code(s), smallTsuChecker(s))
+		X.BindKey(keys.Code(s), &smallTsuChecker{post: s, tsu: K.tsu})
 	}
 }
 
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	enableRomaji(B)
+	hiragana.enableRomaji(B)
 	return rl.CONTINUE
 }
 
