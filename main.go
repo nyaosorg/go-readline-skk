@@ -115,11 +115,12 @@ func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, boo
 		PromptWriter: func(w io.Writer) (int, error) {
 			return fmt.Fprintf(w, "\n%s ", source)
 		},
-		Writer:   B.Writer,
-		LineFeed: func(rl.Result) {},
+		Writer: B.Writer,
+		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
+			return io.WriteString(w, "\r\x1B[K\x1B[A")
+		},
 	}
 	newWord, err := inputNewWord.ReadLine(ctx)
-	B.Out.WriteString("\r\x1B[K\x1B[A")
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
