@@ -116,19 +116,23 @@ func (h henkanStart) String() string {
 	return string(h)
 }
 
-func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
+func ask(ctx context.Context, B *rl.Buffer, prompt string) (string, error) {
 	B.Out.WriteString("\x1B[?25h")
 	B.Out.Flush()
 	inputNewWord := &rl.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
-			return fmt.Fprintf(w, "\n%s ", source)
+			return fmt.Fprintf(w, "\n%s ", prompt)
 		},
 		Writer: B.Writer,
 		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
 			return io.WriteString(w, "\r\x1B[K\x1B[A")
 		},
 	}
-	newWord, err := inputNewWord.ReadLine(ctx)
+	return inputNewWord.ReadLine(ctx)
+}
+
+func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
+	newWord, err := ask(ctx, B, source)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
@@ -204,6 +208,26 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 				return rl.CONTINUE
 			}
 			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
+		} else if input == "X" {
+			prompt := fmt.Sprintf(`really purse "%s /%s/ "?(yes or no)`, source, list[current])
+			ans, err := ask(ctx, B, prompt)
+			if err == nil {
+				if ans == "y" || ans == "yes" {
+					// 本当はシステム辞書を参照しないようLisp構文を
+					// セットしなければいけないが、そこまではしない.
+					if len(list) <= 1 {
+						delete(userJisyo, source)
+					} else {
+						if current+1 < len(list) {
+							copy(list[current:], list[current+1:])
+						}
+						list = list[:len(list)-1]
+						userJisyo[source] = list
+					}
+					B.ReplaceAndRepaint(markerPos, "")
+					return rl.CONTINUE
+				}
+			}
 		} else {
 			removeOne(B, markerPos)
 			return eval(ctx, B, input)
