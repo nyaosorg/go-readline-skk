@@ -7,13 +7,18 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
 )
 
 func main() {
-	skk.Setup("SKK-JISYO.L")
+	customJisyo := ".skk-jisyo"
+	if home, err := os.UserHomeDir(); err == nil {
+		customJisyo = filepath.Join(home, customJisyo)
+	}
+	skk.Setup(customJisyo, "SKK-JISYO.L")
 
 	var ed readline.Editor
 	text, err := ed.ReadLine(context.Background())
@@ -22,4 +27,6 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("TEXT:", text)
+
+	skk.DumpUserJisyoUTF8(os.Stdout)
 }

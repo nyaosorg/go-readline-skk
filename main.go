@@ -9,11 +9,19 @@ import (
 	"os"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/text/encoding/japanese"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
+)
+
+var ErrJisyoNotFound = errors.New("Jisyo not found")
+
+var (
+	systemJisyo = map[string][]string{}
+	userJisyo   = map[string][]string{}
 )
 
 var romajiTable1 = []string{"あ", "い", "う", "え", "お"}
@@ -125,11 +133,29 @@ func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, boo
 	if err != nil || len(newWord) <= 0 {
 		return "", false
 	}
+	list, ok := userJisyo[source]
+	if !ok {
+		list = systemJisyo[source]
+	}
+	// 二重登録よけ
+	for _, candidate := range list {
+		if candidate == newWord {
+			return newWord, true
+		}
+	}
+	// リストの先頭に挿入
+	list = append(list, "")
+	copy(list[1:], list)
+	list[0] = newWord
+	userJisyo[source] = list
 	return newWord, true
 }
 
 func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
-	list, found := jisyo[source]
+	list, found := userJisyo[source]
+	if !found {
+		list, found = systemJisyo[source]
+	}
 	if !found {
 		// 辞書登録モード
 		result, ok := newCandidate(ctx, B, source)
@@ -144,7 +170,8 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 		}
 	}
 	current := 0
-	B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
+	candidate, _, _ := strings.Cut(list[current], ";")
+	B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 	for {
 		input, _ := B.GetKey()
 		if input < " " {
@@ -165,7 +192,8 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 					return rl.CONTINUE
 				}
 			}
-			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
+			candidate, _, _ = strings.Cut(list[current], ";")
+			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 		} else if input == "x" {
 			current--
 			if current < 0 {
@@ -319,21 +347,19 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func loadJisyo(filename string) (map[string][]string, error) {
+func loadJisyo(jisyo map[string][]string, filename string) error {
 	fd, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer fd.Close()
 
 	decoder := japanese.EUCJP.NewDecoder()
 
-	return readJisyo(decoder.Reader(fd))
+	return readJisyo(jisyo, decoder.Reader(fd))
 }
 
-func readJisyo(r io.Reader) (map[string][]string, error) {
-	jisyo := map[string][]string{}
-
+func readJisyo(jisyo map[string][]string, r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Text()
@@ -347,7 +373,6 @@ func readJisyo(r io.Reader) (map[string][]string, error) {
 		values := []string{}
 		for {
 			one, rest, ok := strings.Cut(lists, "/")
-			one, _, _ = strings.Cut(one, ";")
 			if one != "" {
 				values = append(values, one)
 			}
@@ -358,15 +383,16 @@ func readJisyo(r io.Reader) (map[string][]string, error) {
 		}
 		jisyo[source] = values
 	}
-	return jisyo, sc.Err()
+	return sc.Err()
 }
 
-var ErrJisyoNotFound = errors.New("Jisyo not found")
-
-func Setup(jisyoFilenames ...string) error {
+func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 	var err error
-	for _, fn := range jisyoFilenames {
-		jisyo, err = loadJisyo(fn)
+	if userJisyoFname != "" {
+		loadJisyo(userJisyo, userJisyoFname)
+	}
+	for _, fn := range systemJisyoFnames {
+		err = loadJisyo(systemJisyo, fn)
 		if err == nil {
 			rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 			return nil
@@ -376,4 +402,29 @@ func Setup(jisyoFilenames ...string) error {
 		}
 	}
 	return ErrJisyoNotFound
+}
+
+func dumpPair(key string, list []string, w io.Writer) {
+	io.WriteString(w, key)
+	io.WriteString(w, " /")
+	for _, candidate := range list {
+		io.WriteString(w, candidate)
+		io.WriteString(w, "/")
+	}
+	io.WriteString(w, "\n")
+}
+
+func DumpUserJisyoUTF8(w io.Writer) {
+	io.WriteString(w, ";; okuri-ari entries.\n")
+	for key, list := range userJisyo {
+		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
+			dumpPair(key, list, w)
+		}
+	}
+	io.WriteString(w, "\n;; okuri-nasi entries.\n")
+	for key, list := range userJisyo {
+		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
+			dumpPair(key, list, w)
+		}
+	}
 }
