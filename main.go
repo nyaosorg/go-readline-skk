@@ -174,7 +174,10 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 	B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 	for {
 		input, _ := B.GetKey()
-		if input < " " {
+		if input == string(keys.CtrlG) {
+			B.ReplaceAndRepaint(markerPos, markerWhite+source)
+			return rl.CONTINUE
+		} else if input < " " {
 			removeOne(B, markerPos)
 			return rl.CONTINUE
 		} else if input == " " {
@@ -306,6 +309,15 @@ func cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
+func cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
+	markerPos := seekMarker(B)
+	if markerPos < 0 {
+		return cmdDisableRomaji(ctx, B)
+	}
+	B.ReplaceAndRepaint(markerPos, "")
+	return rl.CONTINUE
+}
+
 func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("a", rl.AnonymousCommand(cmdA))
 	B.BindKey("i", rl.AnonymousCommand(cmdI))
@@ -313,6 +325,7 @@ func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey("e", rl.AnonymousCommand(cmdE))
 	B.BindKey("o", rl.AnonymousCommand(cmdO))
 	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
+	B.BindKey(keys.CtrlG, rl.AnonymousCommand(cmdCtrlG))
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
 	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
 	B.BindKey("n", rl.AnonymousCommand(cmdN))
@@ -343,6 +356,7 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	}
 	B.BindKey(",", nil)
 	B.BindKey(".", nil)
+	B.BindKey(keys.CtrlG, nil)
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
 	return rl.CONTINUE
 }
