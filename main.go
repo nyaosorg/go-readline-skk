@@ -112,31 +112,23 @@ var katakana = &Kana{
 	switchTo: 0,
 }
 
-func romajiToKana2char(ctx context.Context, B *rl.Buffer, kana string) rl.Result {
-	rl.CmdBackwardDeleteChar.Call(ctx, B)
-	return rl.SelfInserter(kana).Call(ctx, B)
-}
-
-func romajiToKana3char(ctx context.Context, B *rl.Buffer, kana string) rl.Result {
-	rl.CmdBackwardDeleteChar.Call(ctx, B)
-	rl.CmdBackwardDeleteChar.Call(ctx, B)
-	return rl.SelfInserter(kana).Call(ctx, B)
-}
-
 func (K *Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
 		shiin := B.SubString(B.Cursor-2, B.Cursor)
 		if kana, ok := K.table3[shiin]; ok {
-			return romajiToKana3char(ctx, B, kana[aiueo])
+			B.ReplaceAndRepaint(B.Cursor-2, kana[aiueo])
+			return rl.CONTINUE
 		}
 	}
 	if B.Cursor >= 1 {
 		shiin := B.Buffer[B.Cursor-1].String()
 		if kana, ok := K.table2[shiin]; ok {
-			return romajiToKana2char(ctx, B, kana[aiueo])
+			B.ReplaceAndRepaint(B.Cursor-1, kana[aiueo])
+			return rl.CONTINUE
 		}
 	}
-	return rl.SelfInserter(K.table1[aiueo]).Call(ctx, B)
+	B.InsertAndRepaint(K.table1[aiueo])
+	return rl.CONTINUE
 }
 
 func (K *Kana) cmdA(ctx context.Context, B *rl.Buffer) rl.Result {
@@ -302,8 +294,7 @@ func (h *henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 		source := B.SubString(markerPos+1, B.Cursor) + postfix
 		return henkanMode(ctx, B, markerPos, source, postfix)
 	}
-	rl.SelfInserter(markerWhite).Call(ctx, B)
-	rl.CmdForwardChar.Call(ctx, B)
+	B.InsertAndRepaint(markerWhite)
 	switch h.H {
 	case 'a':
 		return h.K.cmdA(ctx, B)
@@ -316,7 +307,8 @@ func (h *henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	case 'o':
 		return h.K.cmdO(ctx, B)
 	}
-	return rl.SelfInserter(string(h.H)).Call(ctx, B)
+	B.InsertAndRepaint(string(h.H))
+	return rl.CONTINUE
 }
 
 func seekMarker(B *rl.Buffer) int {
@@ -341,7 +333,8 @@ func removeOne(B *rl.Buffer, pos int) {
 func cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
-		return rl.SelfInserter(" ").Call(ctx, B)
+		B.InsertAndRepaint(" ")
+		return rl.CONTINUE
 	}
 	source := B.SubString(markerPos+1, B.Cursor)
 
@@ -353,17 +346,16 @@ func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
 }
 
 func (K *Kana) cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
-	rl.SelfInserter("n").Call(ctx, B)
+	B.InsertAndRepaint("n")
 	input, _ := B.GetKey()
 	switch input {
 	case "n":
-		rl.CmdBackwardDeleteChar.Call(ctx, B)
-		return rl.SelfInserter(K.n).Call(ctx, B)
+		B.ReplaceAndRepaint(B.Cursor-1, K.n)
+		return rl.CONTINUE
 	case "a", "i", "u", "e", "o", "y":
 		return eval(ctx, B, input)
 	default:
-		rl.CmdBackwardDeleteChar.Call(ctx, B)
-		rl.SelfInserter("ん").Call(ctx, B)
+		B.ReplaceAndRepaint(B.Cursor-1, K.n)
 		return eval(ctx, B, input)
 	}
 }
@@ -379,11 +371,11 @@ func (s *smallTsuChecker) String() string {
 
 func (s *smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	if B.Cursor <= 0 || B.Buffer[B.Cursor-1].String() != s.post {
-		return rl.SelfInserter(s.post).Call(ctx, B)
+		B.InsertAndRepaint(s.post)
+	} else {
+		B.ReplaceAndRepaint(B.Cursor-1, s.tsu+B.Buffer[B.Cursor-1].String())
 	}
-	rl.CmdBackwardChar.Call(ctx, B)
-	rl.SelfInserter(s.tsu).Call(ctx, B)
-	return rl.CmdForwardChar.Call(ctx, B)
+	return rl.CONTINUE
 }
 
 func cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
