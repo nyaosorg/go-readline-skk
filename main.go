@@ -116,7 +116,7 @@ func (h henkanStart) String() string {
 	return string(h)
 }
 
-func ask(ctx context.Context, B *rl.Buffer, prompt string) (string, error) {
+func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
 	B.Out.WriteString("\x1B[?25h")
 	B.Out.Flush()
 	inputNewWord := &rl.Editor{
@@ -128,11 +128,14 @@ func ask(ctx context.Context, B *rl.Buffer, prompt string) (string, error) {
 			return io.WriteString(w, "\r\x1B[K\x1B[A")
 		},
 	}
+	if ime {
+		enableRomaji(inputNewWord)
+	}
 	return inputNewWord.ReadLine(ctx)
 }
 
 func newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
-	newWord, err := ask(ctx, B, source)
+	newWord, err := ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
@@ -210,7 +213,7 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 		} else if input == "X" {
 			prompt := fmt.Sprintf(`really purse "%s /%s/ "?(yes or no)`, source, list[current])
-			ans, err := ask(ctx, B, prompt)
+			ans, err := ask(ctx, B, prompt, false)
 			if err == nil {
 				if ans == "y" || ans == "yes" {
 					// 本当はシステム辞書を参照しないようLisp構文を
@@ -342,30 +345,34 @@ func cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	B.BindKey("a", rl.AnonymousCommand(cmdA))
-	B.BindKey("i", rl.AnonymousCommand(cmdI))
-	B.BindKey("u", rl.AnonymousCommand(cmdU))
-	B.BindKey("e", rl.AnonymousCommand(cmdE))
-	B.BindKey("o", rl.AnonymousCommand(cmdO))
-	B.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
-	B.BindKey(keys.CtrlG, rl.AnonymousCommand(cmdCtrlG))
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
-	B.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
-	B.BindKey("n", rl.AnonymousCommand(cmdN))
-	B.BindKey(",", rl.SelfInserter("、"))
-	B.BindKey(".", rl.SelfInserter("。"))
+func enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
+	X.BindKey("a", rl.AnonymousCommand(cmdA))
+	X.BindKey("i", rl.AnonymousCommand(cmdI))
+	X.BindKey("u", rl.AnonymousCommand(cmdU))
+	X.BindKey("e", rl.AnonymousCommand(cmdE))
+	X.BindKey("o", rl.AnonymousCommand(cmdO))
+	X.BindKey("l", rl.AnonymousCommand(cmdDisableRomaji))
+	X.BindKey(keys.CtrlG, rl.AnonymousCommand(cmdCtrlG))
+	X.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdCtrlJ))
+	X.BindKey(" ", rl.AnonymousCommand(cmdHenkan))
+	X.BindKey("n", rl.AnonymousCommand(cmdN))
+	X.BindKey(",", rl.SelfInserter("、"))
+	X.BindKey(".", rl.SelfInserter("。"))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		B.BindKey(keys.Code(upperRomaji[i:i+1]), henkanStart(byte(unicode.ToLower(c))))
+		X.BindKey(keys.Code(upperRomaji[i:i+1]), henkanStart(byte(unicode.ToLower(c))))
 	}
 
 	const consonantButN = "ksthmyrwfgzdbpcj"
 	for i := range consonantButN {
 		s := consonantButN[i : i+1]
-		B.BindKey(keys.Code(s), smallTsuChecker(s))
+		X.BindKey(keys.Code(s), smallTsuChecker(s))
 	}
+}
+
+func cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+	enableRomaji(B)
 	return rl.CONTINUE
 }
 
