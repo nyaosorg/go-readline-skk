@@ -550,27 +550,82 @@ func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 	return nil
 }
 
-func dumpPair(key string, list []string, w io.Writer) {
-	io.WriteString(w, key)
-	io.WriteString(w, " /")
-	for _, candidate := range list {
-		io.WriteString(w, candidate)
-		io.WriteString(w, "/")
+func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
+	var _n int
+	_n, err = io.WriteString(w, key)
+	n += int64(_n)
+	if err != nil {
+		return n, err
 	}
-	io.WriteString(w, "\n")
+	_n, err = io.WriteString(w, " /")
+	n += int64(_n)
+	if err != nil {
+		return n, err
+	}
+	for _, candidate := range list {
+		_n, err = io.WriteString(w, candidate)
+		n += int64(_n)
+		if err != nil {
+			return n, err
+		}
+		_n, err = io.WriteString(w, "/")
+		n += int64(_n)
+		if err != nil {
+			return n, err
+		}
+	}
+	_n, err = io.WriteString(w, "\n")
+	n += int64(_n)
+	return n, err
 }
 
-func (J *Jisyo) DumpUserJisyoUTF8(w io.Writer) {
-	io.WriteString(w, ";; okuri-ari entries.\n")
+func (J *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
+	_n, err := io.WriteString(w, ";; okuri-ari entries.\n")
+	n += int64(_n)
+	if err != nil {
+		return n, err
+	}
 	for key, list := range J.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
-			dumpPair(key, list, w)
+			_n, err := dumpPair(key, list, w)
+			n += _n
+			if err != nil {
+				return n, err
+			}
 		}
 	}
-	io.WriteString(w, "\n;; okuri-nasi entries.\n")
+	_n, err = io.WriteString(w, "\n;; okuri-nasi entries.\n")
+	n += int64(_n)
+	if err != nil {
+		return n, err
+	}
 	for key, list := range J.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
-			dumpPair(key, list, w)
+			_n, err := dumpPair(key, list, w)
+			n += int64(_n)
+			if err != nil {
+				return n, err
+			}
 		}
 	}
+	return n, nil
+}
+
+func (J *Jisyo) SaveUserJisyo(filename string) error {
+	tmpName := filename + ".TMP"
+	fd, err := os.Create(tmpName)
+	if err != nil {
+		return err
+	}
+	encoder := japanese.EUCJP.NewEncoder()
+	if _, err := J.WriteTo(encoder.Writer(fd)); err != nil {
+		return err
+	}
+	if err := fd.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(filename, filename+".BAK"); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, filename)
 }

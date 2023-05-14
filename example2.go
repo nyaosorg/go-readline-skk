@@ -32,7 +32,7 @@ func mains() error {
 	}
 	fmt.Println("TEXT:", text)
 
-	skk1.DumpUserJisyoUTF8(os.Stdout)
+	skk1.SaveUserJisyo(customJisyo + ".test")
 	return nil
 }
 
