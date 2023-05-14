@@ -11,22 +11,31 @@ import (
 
 	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/keys"
 )
 
-func main() {
+func mains() error {
 	customJisyo := ".skk-jisyo"
 	if home, err := os.UserHomeDir(); err == nil {
 		customJisyo = filepath.Join(home, customJisyo)
 	}
-	skk.Setup(customJisyo, "SKK-JISYO.L")
+	if err := skk.Setup(customJisyo, "SKK-JISYO.L"); err != nil {
+		return err
+	}
 
 	var ed readline.Editor
 	text, err := ed.ReadLine(context.Background())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err.Error())
-		os.Exit(1)
+		return err
 	}
 	fmt.Println("TEXT:", text)
 
-	skk.DumpUserJisyoUTF8(os.Stdout)
+	return nil
+}
+
+func main() {
+	if err := mains(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err.Error())
+		os.Exit(1)
+	}
 }
