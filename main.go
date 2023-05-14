@@ -28,6 +28,7 @@ type _Kana struct {
 	table1   []string
 	table2   map[string][]string
 	table3   map[string][]string
+	table4   map[string][]string
 	n        string
 	tsu      string
 	switchTo int
@@ -70,6 +71,9 @@ var hiragana = &_Kana{
 		"my": []string{"みゃ", "みぃ", "みゅ", "みぇ", "みょ"},
 		"ry": []string{"りゃ", "りぃ", "りゅ", "りぇ", "りょ"},
 	},
+	table4: map[string][]string{
+		"xts": []string{"っぁ", "っぃ", "っ", "っぇ", "っぉ"},
+	},
 	n:        "ん",
 	tsu:      "っ",
 	switchTo: 1,
@@ -107,12 +111,22 @@ var katakana = &_Kana{
 		"my": []string{"ミャ", "ミ", "ミュ", "ミェ", "ミョ"},
 		"ry": []string{"リャ", "リィ", "リュ", "リェ", "リョ"},
 	},
+	table4: map[string][]string{
+		"xts": []string{"ッァ", "ッィ", "ッ", "ッェ", "ッォ"},
+	},
 	n:        "ン",
 	tsu:      "ッ",
 	switchTo: 0,
 }
 
 func (K *_Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
+	if B.Cursor >= 3 {
+		shiin := B.SubString(B.Cursor-3, B.Cursor)
+		if kana, ok := K.table4[shiin]; ok {
+			B.ReplaceAndRepaint(B.Cursor-3, kana[aiueo])
+			return rl.CONTINUE
+		}
+	}
 	if B.Cursor >= 2 {
 		shiin := B.SubString(B.Cursor-2, B.Cursor)
 		if kana, ok := K.table3[shiin]; ok {
