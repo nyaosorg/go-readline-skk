@@ -170,7 +170,7 @@ const (
 type _Upper struct {
 	H byte
 	K *_Kana
-	J *Jisyo
+	M *Mode
 }
 
 func (h *_Upper) String() string {
@@ -195,20 +195,20 @@ func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, er
 	return inputNewWord.ReadLine(ctx)
 }
 
-type Jisyo struct {
+type Mode struct {
 	user   map[string][]string
 	system map[string][]string
 }
 
-func (J *Jisyo) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
+func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
 	newWord, err := ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
 	}
-	list, ok := J.user[source]
+	list, ok := M.user[source]
 	if !ok {
-		list = J.system[source]
+		list = M.system[source]
 	}
 	// 二重登録よけ
 	for _, candidate := range list {
@@ -220,18 +220,18 @@ func (J *Jisyo) newCandidate(ctx context.Context, B *rl.Buffer, source string) (
 	list = append(list, "")
 	copy(list[1:], list)
 	list[0] = newWord
-	J.user[source] = list
+	M.user[source] = list
 	return newWord, true
 }
 
-func (J *Jisyo) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
-	list, found := J.user[source]
+func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
+	list, found := M.user[source]
 	if !found {
-		list, found = J.system[source]
+		list, found = M.system[source]
 	}
 	if !found {
 		// 辞書登録モード
-		result, ok := J.newCandidate(ctx, B, source)
+		result, ok := M.newCandidate(ctx, B, source)
 		if ok {
 			// 新変換文字列を展開する
 			B.ReplaceAndRepaint(markerPos, result)
@@ -257,7 +257,7 @@ func (J *Jisyo) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sou
 			current++
 			if current >= len(list) {
 				// 辞書登録モード
-				result, ok := J.newCandidate(ctx, B, source)
+				result, ok := M.newCandidate(ctx, B, source)
 				if ok {
 					// 新変換文字列を展開する
 					B.ReplaceAndRepaint(markerPos, result)
@@ -285,13 +285,13 @@ func (J *Jisyo) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sou
 					// 本当はシステム辞書を参照しないようLisp構文を
 					// セットしなければいけないが、そこまではしない.
 					if len(list) <= 1 {
-						delete(J.user, source)
+						delete(M.user, source)
 					} else {
 						if current+1 < len(list) {
 							copy(list[current:], list[current+1:])
 						}
 						list = list[:len(list)-1]
-						J.user[source] = list
+						M.user[source] = list
 					}
 					B.ReplaceAndRepaint(markerPos, "")
 					return rl.CONTINUE
@@ -309,7 +309,7 @@ func (h *_Upper) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 		// 送り仮名つき変換
 		postfix := string(unicode.ToLower(rune(h.H)))
 		source := B.SubString(markerPos+1, B.Cursor) + postfix
-		return h.J.henkanMode(ctx, B, markerPos, source, postfix)
+		return h.M.henkanMode(ctx, B, markerPos, source, postfix)
 	}
 	B.InsertAndRepaint(markerWhite)
 	switch h.H {
@@ -345,7 +345,7 @@ func removeOne(B *rl.Buffer, pos int) {
 	B.RepaintAfterPrompt()
 }
 
-func (J *Jisyo) cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
 		B.InsertAndRepaint(" ")
@@ -353,7 +353,7 @@ func (J *Jisyo) cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 	}
 	source := B.SubString(markerPos+1, B.Cursor)
 
-	return J.henkanMode(ctx, B, markerPos, source, "")
+	return M.henkanMode(ctx, B, markerPos, source, "")
 }
 
 func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
@@ -393,20 +393,20 @@ func (s *smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (J *Jisyo) cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
-		return J.cmdDisableRomaji(ctx, B)
+		return M.cmdDisableRomaji(ctx, B)
 	}
 	// kakutei
 	removeOne(B, markerPos)
 	return rl.CONTINUE
 }
 
-func (J *Jisyo) cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
-		return J.cmdDisableRomaji(ctx, B)
+		return M.cmdDisableRomaji(ctx, B)
 	}
 	B.ReplaceAndRepaint(markerPos, "")
 	return rl.CONTINUE
@@ -441,16 +441,16 @@ func (K *_Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
 	}
 }
 
-func (J *Jisyo) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	hiragana.enableRomaji(B)
-	B.BindKey(" ", rl.AnonymousCommand(J.cmdHenkan))
-	B.BindKey("l", rl.AnonymousCommand(J.cmdDisableRomaji))
-	B.BindKey(keys.CtrlG, rl.AnonymousCommand(J.cmdCtrlG))
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(J.cmdCtrlJ))
+	B.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
+	B.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
+	B.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
+	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdCtrlJ))
 	return rl.CONTINUE
 }
 
-func (J *Jisyo) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	for i := 'a'; i <= 'z'; i++ {
 		s := string(byte(i))
 		B.BindKey(keys.Code(s), nil)
@@ -462,7 +462,7 @@ func (J *Jisyo) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey(",", nil)
 	B.BindKey(".", nil)
 	B.BindKey(keys.CtrlG, nil)
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(J.cmdEnableRomaji))
+	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdEnableRomaji))
 	B.BindKey("-", nil)
 	B.BindKey(" ", nil)
 	return rl.CONTINUE
@@ -509,8 +509,8 @@ func readJisyo(jisyo map[string][]string, r io.Reader) error {
 
 // Load loads dictionaries and returns new SKK instance.
 // A SKK instance is both a container for dictionaries and a command of readline.
-func Load(userJisyoFname string, systemJisyoFnames ...string) (*Jisyo, error) {
-	jisyo := &Jisyo{
+func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
+	jisyo := &Mode{
 		user:   map[string][]string{},
 		system: map[string][]string{},
 	}
@@ -531,22 +531,22 @@ func Load(userJisyoFname string, systemJisyoFnames ...string) (*Jisyo, error) {
 }
 
 // String returns the name as the command starting SKK
-func (J *Jisyo) String() string {
+func (M *Mode) String() string {
 	return "START-SKK"
 }
 
 // Call is readline.Command to start SKK henkan mode.
-func (J *Jisyo) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	return J.cmdEnableRomaji(ctx, B)
+func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	return M.cmdEnableRomaji(ctx, B)
 }
 
 // Setup registers SKK on readline's GLOBAL key-map.
 func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
-	J, err := Load(userJisyoFname, systemJisyoFnames...)
+	M, err := Load(userJisyoFname, systemJisyoFnames...)
 	if err != nil {
 		return err
 	}
-	rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(J.cmdEnableRomaji))
+	rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdEnableRomaji))
 	return nil
 }
 
@@ -579,13 +579,13 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 	return n, err
 }
 
-func (J *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
+func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
 	_n, err := io.WriteString(w, ";; okuri-ari entries.\n")
 	n += int64(_n)
 	if err != nil {
 		return n, err
 	}
-	for key, list := range J.user {
+	for key, list := range M.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
 			_n, err := dumpPair(key, list, w)
 			n += _n
@@ -599,7 +599,7 @@ func (J *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	if err != nil {
 		return n, err
 	}
-	for key, list := range J.user {
+	for key, list := range M.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
 			_n, err := dumpPair(key, list, w)
 			n += int64(_n)
@@ -611,14 +611,14 @@ func (J *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	return n, nil
 }
 
-func (J *Jisyo) SaveUserJisyo(filename string) error {
+func (M *Mode) SaveUserJisyo(filename string) error {
 	tmpName := filename + ".TMP"
 	fd, err := os.Create(tmpName)
 	if err != nil {
 		return err
 	}
 	encoder := japanese.EUCJP.NewEncoder()
-	if _, err := J.WriteTo(encoder.Writer(fd)); err != nil {
+	if _, err := M.WriteTo(encoder.Writer(fd)); err != nil {
 		return err
 	}
 	if err := fd.Close(); err != nil {
