@@ -24,7 +24,7 @@ var (
 	userJisyo   = map[string][]string{}
 )
 
-type Kana struct {
+type _Kana struct {
 	table1   []string
 	table2   map[string][]string
 	table3   map[string][]string
@@ -33,12 +33,12 @@ type Kana struct {
 	switchTo int
 }
 
-var kanaTable = []*Kana{
+var kanaTable = []*_Kana{
 	hiragana,
 	katakana,
 }
 
-var hiragana = &Kana{
+var hiragana = &_Kana{
 	table1: []string{"あ", "い", "う", "え", "お"},
 	table2: map[string][]string{
 		"k": []string{"か", "き", "く", "け", "こ"},
@@ -75,7 +75,7 @@ var hiragana = &Kana{
 	switchTo: 1,
 }
 
-var katakana = &Kana{
+var katakana = &_Kana{
 	table1: []string{"ア", "イ", "ウ", "エ", "オ"},
 	table2: map[string][]string{
 		"k": []string{"カ", "キ", "ク", "ケ", "コ"},
@@ -112,7 +112,7 @@ var katakana = &Kana{
 	switchTo: 0,
 }
 
-func (K *Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
+func (K *_Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result {
 	if B.Cursor >= 2 {
 		shiin := B.SubString(B.Cursor-2, B.Cursor)
 		if kana, ok := K.table3[shiin]; ok {
@@ -131,23 +131,23 @@ func (K *Kana) cmdVowels(ctx context.Context, B *rl.Buffer, aiueo int) rl.Result
 	return rl.CONTINUE
 }
 
-func (K *Kana) cmdA(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdA(ctx context.Context, B *rl.Buffer) rl.Result {
 	return K.cmdVowels(ctx, B, 0)
 }
 
-func (K *Kana) cmdI(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdI(ctx context.Context, B *rl.Buffer) rl.Result {
 	return K.cmdVowels(ctx, B, 1)
 }
 
-func (K *Kana) cmdU(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdU(ctx context.Context, B *rl.Buffer) rl.Result {
 	return K.cmdVowels(ctx, B, 2)
 }
 
-func (K *Kana) cmdE(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdE(ctx context.Context, B *rl.Buffer) rl.Result {
 	return K.cmdVowels(ctx, B, 3)
 }
 
-func (K *Kana) cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdO(ctx context.Context, B *rl.Buffer) rl.Result {
 	return K.cmdVowels(ctx, B, 4)
 }
 
@@ -158,7 +158,7 @@ const (
 
 type henkanStart struct {
 	H byte
-	K *Kana
+	K *_Kana
 }
 
 func (h *henkanStart) String() string {
@@ -345,7 +345,7 @@ func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
 	return B.LookupCommand(input).Call(ctx, B)
 }
 
-func (K *Kana) cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.InsertAndRepaint("n")
 	input, _ := B.GetKey()
 	switch input {
@@ -397,12 +397,12 @@ func cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (K *Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
+func (K *_Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
 	kanaTable[K.switchTo].enableRomaji(B)
 	return rl.CONTINUE
 }
 
-func (K *Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
+func (K *_Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
 	X.BindKey("a", rl.AnonymousCommand(K.cmdA))
 	X.BindKey("i", rl.AnonymousCommand(K.cmdI))
 	X.BindKey("u", rl.AnonymousCommand(K.cmdU))
