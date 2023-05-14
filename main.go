@@ -17,6 +17,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny/keys"
 )
 
+// ErrJisyoNotFound is an error that means dictionary file not found
 var ErrJisyoNotFound = errors.New("Jisyo not found")
 
 type _Kana struct {
@@ -195,6 +196,7 @@ func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, er
 	return inputNewWord.ReadLine(ctx)
 }
 
+// Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
 	user   map[string][]string
 	system map[string][]string
@@ -540,7 +542,9 @@ func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return M.cmdEnableRomaji(ctx, B)
 }
 
-// Setup registers SKK on readline's GLOBAL key-map.
+// Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.
+// If you want to set the SKK for a specific readline keymap,
+// give the return value of the Load function as the second argument of BindKey
 func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 	M, err := Load(userJisyoFname, systemJisyoFnames...)
 	if err != nil {
@@ -579,6 +583,8 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 	return n, err
 }
 
+// WriteTo outputs the user dictionary to w.
+// Please note that the character code is UTF8.
 func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
 	_n, err := io.WriteString(w, ";; okuri-ari entries.\n")
 	n += int64(_n)
@@ -611,6 +617,10 @@ func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
 	return n, nil
 }
 
+// SaveUserJisyo saves the user dictionary as filename.
+// The file is first created with the name filename+".TMP",
+// and replaced with the file of filename after closing.
+// The original file is renamed to filename + ".BAK".
 func (M *Mode) SaveUserJisyo(filename string) error {
 	tmpName := filename + ".TMP"
 	fd, err := os.Create(tmpName)
