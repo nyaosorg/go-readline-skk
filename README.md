@@ -5,8 +5,6 @@ go-readline-skk
 
 ![./demo.gif](./demo.gif)
 
-現在は試作中で、まだユーザ辞書のセーブなどはできません。
-
 ```example.go
 package main
 
