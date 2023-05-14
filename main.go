@@ -464,6 +464,8 @@ func cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.BindKey(".", nil)
 	B.BindKey(keys.CtrlG, nil)
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(cmdEnableRomaji))
+	B.BindKey("-", nil)
+	B.BindKey(" ", nil)
 	return rl.CONTINUE
 }
 
