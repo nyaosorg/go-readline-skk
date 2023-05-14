@@ -424,6 +424,7 @@ func (K *Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
 	X.BindKey("q", rl.AnonymousCommand(K.cmdQ))
+	X.BindKey("-", rl.SelfInserter("ー"))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
