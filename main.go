@@ -156,12 +156,12 @@ const (
 	markerBlack = "▼"
 )
 
-type henkanStart struct {
+type _Upper struct {
 	H byte
 	K *_Kana
 }
 
-func (h *henkanStart) String() string {
+func (h *_Upper) String() string {
 	return string(h.H)
 }
 
@@ -287,7 +287,7 @@ func henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string,
 	}
 }
 
-func (h *henkanStart) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (h *_Upper) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	if markerPos := seekMarker(B); markerPos >= 0 {
 		// 送り仮名つき変換
 		postfix := string(unicode.ToLower(rune(h.H)))
@@ -420,7 +420,7 @@ func (K *_Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		X.BindKey(keys.Code(upperRomaji[i:i+1]), &henkanStart{H: byte(unicode.ToLower(c)), K: K})
+		X.BindKey(keys.Code(upperRomaji[i:i+1]), &_Upper{H: byte(unicode.ToLower(c)), K: K})
 	}
 
 	const consonantButN = "ksthmyrwfgzdbpcj"
