@@ -18,7 +18,6 @@ import (
 
     "github.com/hymkor/go-readline-skk"
     "github.com/nyaosorg/go-readline-ny"
-    "github.com/nyaosorg/go-readline-ny/keys"
 )
 
 func mains() error {
