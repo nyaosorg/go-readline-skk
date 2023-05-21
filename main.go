@@ -578,67 +578,66 @@ func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 	return nil
 }
 
+type writeCounter struct {
+	n   int64
+	err error
+}
+
+func (w *writeCounter) Try(n int, err error) bool {
+	w.n += int64(n)
+	w.err = err
+	return err != nil
+}
+
+func (w *writeCounter) Try64(n int64, err error) bool {
+	w.n += n
+	w.err = err
+	return err != nil
+}
+
+func (w *writeCounter) Result() (int64, error) {
+	return w.n, w.err
+}
+
 func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
-	var _n int
-	_n, err = io.WriteString(w, key)
-	n += int64(_n)
-	if err != nil {
-		return n, err
-	}
-	_n, err = io.WriteString(w, " /")
-	n += int64(_n)
-	if err != nil {
-		return n, err
+	var wc writeCounter
+	if wc.Try(io.WriteString(w, key)) || wc.Try(io.WriteString(w, " /")) {
+		return wc.Result()
 	}
 	for _, candidate := range list {
-		_n, err = io.WriteString(w, candidate)
-		n += int64(_n)
-		if err != nil {
-			return n, err
-		}
-		_n, err = io.WriteString(w, "/")
-		n += int64(_n)
-		if err != nil {
-			return n, err
+		if wc.Try(io.WriteString(w, candidate)) || wc.Try(io.WriteString(w, "/")) {
+			return wc.Result()
 		}
 	}
-	_n, err = io.WriteString(w, "\n")
-	n += int64(_n)
-	return n, err
+	wc.Try(io.WriteString(w, "\n"))
+	return wc.Result()
 }
 
 // WriteTo outputs the user dictionary to w.
 // Please note that the character code is UTF8.
 func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
-	_n, err := io.WriteString(w, ";; okuri-ari entries.\n")
-	n += int64(_n)
-	if err != nil {
-		return n, err
+	var wc writeCounter
+	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
+		return wc.Result()
 	}
 	for key, list := range M.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
-			_n, err := dumpPair(key, list, w)
-			n += _n
-			if err != nil {
-				return n, err
+			if wc.Try64(dumpPair(key, list, w)) {
+				return wc.Result()
 			}
 		}
 	}
-	_n, err = io.WriteString(w, "\n;; okuri-nasi entries.\n")
-	n += int64(_n)
-	if err != nil {
-		return n, err
+	if wc.Try(io.WriteString(w, "\n;; okuri-nasi entries.\n")) {
+		return wc.Result()
 	}
 	for key, list := range M.user {
 		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
-			_n, err := dumpPair(key, list, w)
-			n += int64(_n)
-			if err != nil {
-				return n, err
+			if wc.Try64(dumpPair(key, list, w)) {
+				return wc.Result()
 			}
 		}
 	}
-	return n, nil
+	return wc.Result()
 }
 
 // SaveUserJisyo saves the user dictionary as filename.
