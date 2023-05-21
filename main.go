@@ -205,7 +205,7 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 		},
 	}
 	if ime {
-		hiragana.enableRomaji(inputNewWord)
+		M.enableHiragana(inputNewWord)
 	}
 	return inputNewWord.ReadLine(ctx)
 }
@@ -434,7 +434,11 @@ func (K *_Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (K *_Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
+type canBindKey interface {
+	interface{ BindKey(keys.Code, rl.Command) }
+}
+
+func (K *_Kana) enableRomaji(X canBindKey) {
 	X.BindKey("a", rl.AnonymousCommand(K.cmdA))
 	X.BindKey("i", rl.AnonymousCommand(K.cmdI))
 	X.BindKey("u", rl.AnonymousCommand(K.cmdU))
@@ -458,12 +462,16 @@ func (K *_Kana) enableRomaji(X interface{ BindKey(keys.Code, rl.Command) }) {
 	}
 }
 
+func (M *Mode) enableHiragana(X canBindKey) {
+	hiragana.enableRomaji(X)
+	X.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
+	X.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
+	X.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
+	X.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdCtrlJ))
+}
+
 func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	hiragana.enableRomaji(B)
-	B.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
-	B.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
-	B.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdCtrlJ))
+	M.enableHiragana(B)
 	return rl.CONTINUE
 }
 
