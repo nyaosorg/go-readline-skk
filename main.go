@@ -178,16 +178,30 @@ func (h *_Upper) String() string {
 	return string(h.H)
 }
 
-func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
+func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
 	B.Out.WriteString("\x1B[?25h")
 	B.Out.Flush()
 	inputNewWord := &rl.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
-			return fmt.Fprintf(w, "\n%s ", prompt)
+			switch M.StatusLine {
+			case 0:
+				return fmt.Fprintf(w, "\r%s ", prompt)
+			case 1:
+				return fmt.Fprintf(w, "\n%s ", prompt)
+			default:
+				return fmt.Fprintf(w, "%s%s ", strings.Repeat("\n", M.StatusLine), prompt)
+			}
 		},
 		Writer: B.Writer,
 		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
-			return io.WriteString(w, "\r\x1B[K\x1B[A")
+			switch M.StatusLine {
+			case 0:
+				return io.WriteString(w, "\r\x1B[K")
+			case 1:
+				return io.WriteString(w, "\r\x1B[K\x1B[A")
+			default:
+				return fmt.Fprintf(w, "\r\x1B[K\x1B[%dA", M.StatusLine)
+			}
 		},
 	}
 	if ime {
@@ -198,12 +212,13 @@ func ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, er
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	user   map[string][]string
-	system map[string][]string
+	user       map[string][]string
+	system     map[string][]string
+	StatusLine int
 }
 
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
-	newWord, err := ask(ctx, B, source, true)
+	newWord, err := M.ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
@@ -281,7 +296,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
 		} else if input == "X" {
 			prompt := fmt.Sprintf(`really purse "%s /%s/ "?(yes or no)`, source, list[current])
-			ans, err := ask(ctx, B, prompt, false)
+			ans, err := M.ask(ctx, B, prompt, false)
 			if err == nil {
 				if ans == "y" || ans == "yes" {
 					// 本当はシステム辞書を参照しないようLisp構文を
@@ -513,8 +528,9 @@ func readJisyo(jisyo map[string][]string, r io.Reader) error {
 // A SKK instance is both a container for dictionaries and a command of readline.
 func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
 	jisyo := &Mode{
-		user:   map[string][]string{},
-		system: map[string][]string{},
+		user:       map[string][]string{},
+		system:     map[string][]string{},
+		StatusLine: 1,
 	}
 	var err error
 	if userJisyoFname != "" {
