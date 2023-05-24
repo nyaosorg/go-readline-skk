@@ -178,43 +178,71 @@ func (h *_Upper) String() string {
 	return string(h.H)
 }
 
+type QueryPrompter interface {
+	Prompt(io.Writer, string) (int, error)
+	LineFeed(io.Writer) (int, error)
+	Recurse(string) QueryPrompter
+}
+
+type QueryOnNextLine struct{}
+
+func (_ QueryOnNextLine) Prompt(w io.Writer, prompt string) (int, error) {
+	return fmt.Fprintf(w, "\n%s ", prompt)
+}
+
+func (_ QueryOnNextLine) LineFeed(w io.Writer) (int, error) {
+	return io.WriteString(w, "\r\x1B[K\x1B[A")
+}
+
+func (q QueryOnNextLine) Recurse(originalPrompt string) QueryPrompter {
+	return &QueryOnCurrentLine{OriginalPrompt: originalPrompt}
+}
+
+type QueryOnCurrentLine struct {
+	OriginalPrompt string
+}
+
+func (q *QueryOnCurrentLine) Prompt(w io.Writer, prompt string) (int, error) {
+	return fmt.Fprintf(w, "\r%s ", prompt)
+}
+
+func (q *QueryOnCurrentLine) LineFeed(w io.Writer) (int, error) {
+	return fmt.Fprintf(w, "\r%s \x1B[K", q.OriginalPrompt)
+}
+
+func (q *QueryOnCurrentLine) Recurse(originalPrompt string) QueryPrompter {
+	return &QueryOnCurrentLine{OriginalPrompt: originalPrompt}
+}
+
 func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
 	B.Out.WriteString("\x1B[?25h")
 	B.Out.Flush()
 	inputNewWord := &rl.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
-			switch M.StatusLine {
-			case 0:
-				return fmt.Fprintf(w, "\r%s ", prompt)
-			case 1:
-				return fmt.Fprintf(w, "\n%s ", prompt)
-			default:
-				return fmt.Fprintf(w, "%s%s ", strings.Repeat("\n", M.StatusLine), prompt)
-			}
+			return M.QueryPrompter.Prompt(w, prompt)
 		},
 		Writer: B.Writer,
 		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
-			switch M.StatusLine {
-			case 0:
-				return io.WriteString(w, "\r\x1B[K")
-			case 1:
-				return io.WriteString(w, "\r\x1B[K\x1B[A")
-			default:
-				return fmt.Fprintf(w, "\r\x1B[K\x1B[%dA", M.StatusLine)
-			}
+			return M.QueryPrompter.LineFeed(w)
 		},
 	}
 	if ime {
-		M.enableHiragana(inputNewWord)
+		m := &Mode{
+			user:          M.user,
+			system:        M.system,
+			QueryPrompter: M.QueryPrompter.Recurse(prompt),
+		}
+		m.enableHiragana(inputNewWord)
 	}
+	defer B.RepaintAfterPrompt()
 	return inputNewWord.ReadLine(ctx)
 }
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	user       map[string][]string
-	system     map[string][]string
-	StatusLine int
+	user          map[string][]string
+	system        map[string][]string
+	QueryPrompter QueryPrompter
 }
 
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
@@ -536,9 +564,9 @@ func readJisyo(jisyo map[string][]string, r io.Reader) error {
 // A SKK instance is both a container for dictionaries and a command of readline.
 func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
 	jisyo := &Mode{
-		user:       map[string][]string{},
-		system:     map[string][]string{},
-		StatusLine: 1,
+		user:          map[string][]string{},
+		system:        map[string][]string{},
+		QueryPrompter: QueryOnNextLine{},
 	}
 	var err error
 	if userJisyoFname != "" {

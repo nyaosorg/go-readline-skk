@@ -23,7 +23,6 @@ func mains() error {
 	if err != nil {
 		return err
 	}
-	skk1.StatusLine = 2
 
 	var ed readline.Editor
 	ed.BindKey(keys.CtrlJ, skk1)
