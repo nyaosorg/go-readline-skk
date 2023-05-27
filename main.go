@@ -527,10 +527,12 @@ func loadJisyo(jisyo map[string][]string, filename string) error {
 		return err
 	}
 	defer fd.Close()
+	return readEucJpJisyo(jisyo, fd)
+}
 
+func readEucJpJisyo(jisyo map[string][]string, r io.Reader) error {
 	decoder := japanese.EUCJP.NewDecoder()
-
-	return readJisyo(jisyo, decoder.Reader(fd))
+	return readJisyo(jisyo, decoder.Reader(r))
 }
 
 func readJisyo(jisyo map[string][]string, r io.Reader) error {
