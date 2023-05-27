@@ -219,8 +219,8 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 	}
 	if ime {
 		m := &Mode{
-			user:          M.user,
-			system:        M.system,
+			User:          M.User,
+			System:        M.System,
 			QueryPrompter: M.QueryPrompter.Recurse(prompt),
 		}
 		m.enableHiragana(inputNewWord)
@@ -231,8 +231,8 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	user          Jisyo
-	system        Jisyo
+	User          Jisyo
+	System        Jisyo
 	QueryPrompter QueryPrompter
 	saveMap       map[keys.Code]rl.Command
 }
@@ -243,9 +243,9 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 	if err != nil || len(newWord) <= 0 {
 		return "", false
 	}
-	list, ok := M.user[source]
+	list, ok := M.User[source]
 	if !ok {
-		list = M.system[source]
+		list = M.System[source]
 	}
 	// 二重登録よけ
 	for _, candidate := range list {
@@ -257,14 +257,14 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 	list = append(list, "")
 	copy(list[1:], list)
 	list[0] = newWord
-	M.user[source] = list
+	M.User[source] = list
 	return newWord, true
 }
 
 func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
-	list, found := M.user[source]
+	list, found := M.User[source]
 	if !found {
-		list, found = M.system[source]
+		list, found = M.System[source]
 	}
 	if !found {
 		// 辞書登録モード
@@ -322,13 +322,13 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 					// 本当はシステム辞書を参照しないようLisp構文を
 					// セットしなければいけないが、そこまではしない.
 					if len(list) <= 1 {
-						delete(M.user, source)
+						delete(M.User, source)
 					} else {
 						if current+1 < len(list) {
 							copy(list[current:], list[current+1:])
 						}
 						list = list[:len(list)-1]
-						M.user[source] = list
+						M.User[source] = list
 					}
 					B.ReplaceAndRepaint(markerPos, "")
 					return rl.CONTINUE

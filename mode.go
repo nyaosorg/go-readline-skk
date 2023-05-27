@@ -15,8 +15,8 @@ var ErrJisyoNotFound = errors.New("Jisyo not found")
 
 func New() *Mode {
 	return &Mode{
-		user:          Jisyo{},
-		system:        Jisyo{},
+		User:          Jisyo{},
+		System:        Jisyo{},
 		QueryPrompter: QueryOnNextLine{},
 	}
 }
@@ -27,10 +27,10 @@ func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
 	jisyo := New()
 	var err error
 	if userJisyoFname != "" {
-		jisyo.user.Load(userJisyoFname)
+		jisyo.User.Load(userJisyoFname)
 	}
 	for _, fn := range systemJisyoFnames {
-		err = jisyo.system.Load(fn)
+		err = jisyo.System.Load(fn)
 		if err == nil {
 			return jisyo, nil
 		}
@@ -66,7 +66,7 @@ func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 // WriteTo outputs the user dictionary to w.
 // Please note that the character code is UTF8.
 func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
-	return M.user.WriteTo(w)
+	return M.User.WriteTo(w)
 }
 
 // SaveUserJisyo saves the user dictionary as filename.
@@ -79,7 +79,7 @@ func (M *Mode) SaveUserJisyo(filename string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := M.user.WriteToEucJp(fd); err != nil {
+	if _, err := M.User.WriteToEucJp(fd); err != nil {
 		return err
 	}
 	if err := fd.Close(); err != nil {
