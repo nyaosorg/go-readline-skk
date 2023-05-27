@@ -243,6 +243,7 @@ type Mode struct {
 	user          map[string][]string
 	system        map[string][]string
 	QueryPrompter QueryPrompter
+	saveMap       map[keys.Code]rl.Command
 }
 
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
@@ -463,7 +464,8 @@ func (K *_Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
 }
 
 type canBindKey interface {
-	interface{ BindKey(keys.Code, rl.Command) }
+	BindKey(keys.Code, rl.Command)
+	LookupCommand(string) rl.Command
 }
 
 func (K *_Kana) enableRomaji(X canBindKey) {
@@ -499,25 +501,23 @@ func (M *Mode) enableHiragana(X canBindKey) {
 }
 
 func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+	const values = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,.- \x07\n"
+	if M.saveMap == nil {
+		M.saveMap = map[keys.Code]rl.Command{}
+		for i := range values {
+			s := values[i : i+1]
+			M.saveMap[keys.Code(s)] = B.LookupCommand(s)
+		}
+	}
+
 	M.enableHiragana(B)
 	return rl.CONTINUE
 }
 
 func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	for i := 'a'; i <= 'z'; i++ {
-		s := string(byte(i))
-		B.BindKey(keys.Code(s), nil)
+	for key, command := range M.saveMap {
+		B.BindKey(key, command)
 	}
-	for i := 'A'; i <= 'Z'; i++ {
-		s := string(byte(i))
-		B.BindKey(keys.Code(s), nil)
-	}
-	B.BindKey(",", nil)
-	B.BindKey(".", nil)
-	B.BindKey(keys.CtrlG, nil)
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdEnableRomaji))
-	B.BindKey("-", nil)
-	B.BindKey(" ", nil)
 	return rl.CONTINUE
 }
 
