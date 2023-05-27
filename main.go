@@ -1,24 +1,15 @@
 package skk
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"unicode"
-	"unicode/utf8"
-
-	"golang.org/x/text/encoding/japanese"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 )
-
-// ErrJisyoNotFound is an error that means dictionary file not found
-var ErrJisyoNotFound = errors.New("Jisyo not found")
 
 type _Kana struct {
 	table1   []string
@@ -240,8 +231,8 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	user          map[string][]string
-	system        map[string][]string
+	user          Jisyo
+	system        Jisyo
 	QueryPrompter QueryPrompter
 	saveMap       map[keys.Code]rl.Command
 }
@@ -519,176 +510,4 @@ func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 		B.BindKey(key, command)
 	}
 	return rl.CONTINUE
-}
-
-func loadJisyo(jisyo map[string][]string, filename string) error {
-	fd, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-	return readEucJpJisyo(jisyo, fd)
-}
-
-func readEucJpJisyo(jisyo map[string][]string, r io.Reader) error {
-	decoder := japanese.EUCJP.NewDecoder()
-	return readJisyo(jisyo, decoder.Reader(r))
-}
-
-func readJisyo(jisyo map[string][]string, r io.Reader) error {
-	sc := bufio.NewScanner(r)
-	for sc.Scan() {
-		line := sc.Text()
-		if len(line) <= 0 || line[0] == ';' {
-			continue
-		}
-		source, lists, ok := strings.Cut(line, " /")
-		if !ok {
-			continue
-		}
-		values := []string{}
-		for {
-			one, rest, ok := strings.Cut(lists, "/")
-			if one != "" {
-				values = append(values, one)
-			}
-			if !ok {
-				break
-			}
-			lists = rest
-		}
-		jisyo[source] = values
-	}
-	return sc.Err()
-}
-
-// Load loads dictionaries and returns new SKK instance.
-// A SKK instance is both a container for dictionaries and a command of readline.
-func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
-	jisyo := &Mode{
-		user:          map[string][]string{},
-		system:        map[string][]string{},
-		QueryPrompter: QueryOnNextLine{},
-	}
-	var err error
-	if userJisyoFname != "" {
-		loadJisyo(jisyo.user, userJisyoFname)
-	}
-	for _, fn := range systemJisyoFnames {
-		err = loadJisyo(jisyo.system, fn)
-		if err == nil {
-			return jisyo, nil
-		}
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-	}
-	return nil, ErrJisyoNotFound
-}
-
-// String returns the name as the command starting SKK
-func (M *Mode) String() string {
-	return "START-SKK"
-}
-
-// Call is readline.Command to start SKK henkan mode.
-func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	return M.cmdEnableRomaji(ctx, B)
-}
-
-// Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.
-// If you want to set the SKK for a specific readline keymap,
-// give the return value of the Load function as the second argument of BindKey
-func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
-	M, err := Load(userJisyoFname, systemJisyoFnames...)
-	if err != nil {
-		return err
-	}
-	rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdEnableRomaji))
-	return nil
-}
-
-type writeCounter struct {
-	n   int64
-	err error
-}
-
-func (w *writeCounter) Try(n int, err error) bool {
-	w.n += int64(n)
-	w.err = err
-	return err != nil
-}
-
-func (w *writeCounter) Try64(n int64, err error) bool {
-	w.n += n
-	w.err = err
-	return err != nil
-}
-
-func (w *writeCounter) Result() (int64, error) {
-	return w.n, w.err
-}
-
-func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
-	var wc writeCounter
-	if wc.Try(io.WriteString(w, key)) || wc.Try(io.WriteString(w, " /")) {
-		return wc.Result()
-	}
-	for _, candidate := range list {
-		if wc.Try(io.WriteString(w, candidate)) || wc.Try(io.WriteString(w, "/")) {
-			return wc.Result()
-		}
-	}
-	wc.Try(io.WriteString(w, "\n"))
-	return wc.Result()
-}
-
-// WriteTo outputs the user dictionary to w.
-// Please note that the character code is UTF8.
-func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
-	var wc writeCounter
-	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
-		return wc.Result()
-	}
-	for key, list := range M.user {
-		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
-			if wc.Try64(dumpPair(key, list, w)) {
-				return wc.Result()
-			}
-		}
-	}
-	if wc.Try(io.WriteString(w, "\n;; okuri-nasi entries.\n")) {
-		return wc.Result()
-	}
-	for key, list := range M.user {
-		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
-			if wc.Try64(dumpPair(key, list, w)) {
-				return wc.Result()
-			}
-		}
-	}
-	return wc.Result()
-}
-
-// SaveUserJisyo saves the user dictionary as filename.
-// The file is first created with the name filename+".TMP",
-// and replaced with the file of filename after closing.
-// The original file is renamed to filename + ".BAK".
-func (M *Mode) SaveUserJisyo(filename string) error {
-	tmpName := filename + ".TMP"
-	fd, err := os.Create(tmpName)
-	if err != nil {
-		return err
-	}
-	encoder := japanese.EUCJP.NewEncoder()
-	if _, err := M.WriteTo(encoder.Writer(fd)); err != nil {
-		return err
-	}
-	if err := fd.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(filename, filename+".BAK"); err != nil {
-		return err
-	}
-	return os.Rename(tmpName, filename)
 }
