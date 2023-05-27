@@ -13,6 +13,7 @@ import (
 // ErrJisyoNotFound is an error that means dictionary file not found
 var ErrJisyoNotFound = errors.New("Jisyo not found")
 
+// New creats an instance with empty dictionaries.
 func New() *Mode {
 	return &Mode{
 		User:          Jisyo{},

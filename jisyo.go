@@ -10,8 +10,10 @@ import (
 	"golang.org/x/text/encoding/japanese"
 )
 
+// Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo map[string][]string
 
+// Load reads the contents of an dictionary from a file as EUC-JP.
 func (j Jisyo) Load(filename string) error {
 	fd, err := os.Open(filename)
 	if err != nil {
@@ -21,11 +23,13 @@ func (j Jisyo) Load(filename string) error {
 	return j.ReadEucJp(fd)
 }
 
+// Load reads the contents of an dictionary from io.Reader as EUC-JP
 func (j Jisyo) ReadEucJp(r io.Reader) error {
 	decoder := japanese.EUCJP.NewDecoder()
 	return j.Read(decoder.Reader(r))
 }
 
+// Load reads the contents of an dictionary from io.Reader as UTF8
 func (j Jisyo) Read(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
@@ -88,6 +92,7 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 	return wc.Result()
 }
 
+// WriteTo outputs the contents of dictonary with UTF8
 func (j Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	var wc writeCounter
 	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
@@ -113,6 +118,7 @@ func (j Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	return wc.Result()
 }
 
+// WriteTo outputs the contents of dictonary with EUC-JP
 func (j Jisyo) WriteToEucJp(w io.Writer) (n int64, err error) {
 	encoder := japanese.EUCJP.NewEncoder()
 	return j.WriteTo(encoder.Writer(w))
