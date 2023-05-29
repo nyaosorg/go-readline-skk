@@ -346,9 +346,17 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 func (h *_Upper) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	if markerPos := seekMarker(B); markerPos >= 0 {
 		// 送り仮名つき変換
-		postfix := string(unicode.ToLower(rune(h.H)))
-		source := B.SubString(markerPos+1, B.Cursor) + postfix
-		return h.M.henkanMode(ctx, B, markerPos, source, postfix)
+		var source strings.Builder
+		source.WriteString(B.SubString(markerPos+1, B.Cursor))
+		source.WriteByte(h.H)
+
+		var postfix string
+		if index := strings.IndexByte("aiueo", h.H); index >= 0 {
+			postfix = h.K.table1[index]
+		} else {
+			postfix = string(h.H)
+		}
+		return h.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
 	}
 	B.InsertAndRepaint(markerWhite)
 	switch h.H {
