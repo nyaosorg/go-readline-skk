@@ -161,14 +161,14 @@ const (
 	markerBlack = "▼"
 )
 
-type _Upper struct {
-	H byte
-	K *_Kana
-	M *Mode
+type _Trigger struct {
+	Key byte
+	K   *_Kana
+	M   *Mode
 }
 
-func (h *_Upper) String() string {
-	return string(h.H)
+func (trig *_Trigger) String() string {
+	return "HENKAN-TRIGGER-" + string(trig.Key)
 }
 
 type QueryPrompter interface {
@@ -343,35 +343,35 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 	}
 }
 
-func (h *_Upper) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (trig *_Trigger) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	if markerPos := seekMarker(B); markerPos >= 0 {
 		// 送り仮名つき変換
 		var source strings.Builder
 		source.WriteString(B.SubString(markerPos+1, B.Cursor))
-		source.WriteByte(h.H)
+		source.WriteByte(trig.Key)
 
 		var postfix string
-		if index := strings.IndexByte("aiueo", h.H); index >= 0 {
-			postfix = h.K.table1[index]
+		if index := strings.IndexByte("aiueo", trig.Key); index >= 0 {
+			postfix = trig.K.table1[index]
 		} else {
-			postfix = string(h.H)
+			postfix = string(trig.Key)
 		}
-		return h.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
+		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
 	}
 	B.InsertAndRepaint(markerWhite)
-	switch h.H {
+	switch trig.Key {
 	case 'a':
-		return h.K.cmdA(ctx, B)
+		return trig.K.cmdA(ctx, B)
 	case 'i':
-		return h.K.cmdI(ctx, B)
+		return trig.K.cmdI(ctx, B)
 	case 'u':
-		return h.K.cmdU(ctx, B)
+		return trig.K.cmdU(ctx, B)
 	case 'e':
-		return h.K.cmdE(ctx, B)
+		return trig.K.cmdE(ctx, B)
 	case 'o':
-		return h.K.cmdO(ctx, B)
+		return trig.K.cmdO(ctx, B)
 	}
-	B.InsertAndRepaint(string(h.H))
+	B.InsertAndRepaint(string(trig.Key))
 	return rl.CONTINUE
 }
 
@@ -492,7 +492,7 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		u := &_Upper{H: byte(unicode.ToLower(c)), K: K, M: mode}
+		u := &_Trigger{Key: byte(unicode.ToLower(c)), K: K, M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
 
