@@ -449,8 +449,17 @@ func (M *Mode) cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (K *_Kana) cmdQ(ctx context.Context, B *rl.Buffer) rl.Result {
-	kanaTable[K.switchTo].enableRomaji(B)
+type cmdQ struct {
+	mode *Mode
+	kana *_Kana
+}
+
+func (c *cmdQ) String() string {
+	return "SWITCH-KANA"
+}
+
+func (c *cmdQ) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	kanaTable[c.kana.switchTo].enableRomaji(B, c.mode)
 	return rl.CONTINUE
 }
 
@@ -459,7 +468,7 @@ type canBindKey interface {
 	LookupCommand(string) rl.Command
 }
 
-func (K *_Kana) enableRomaji(X canBindKey) {
+func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey("a", rl.AnonymousCommand(K.cmdA))
 	X.BindKey("i", rl.AnonymousCommand(K.cmdI))
 	X.BindKey("u", rl.AnonymousCommand(K.cmdU))
@@ -468,12 +477,13 @@ func (K *_Kana) enableRomaji(X canBindKey) {
 	X.BindKey("n", rl.AnonymousCommand(K.cmdN))
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
-	X.BindKey("q", rl.AnonymousCommand(K.cmdQ))
+	X.BindKey("q", &cmdQ{kana: K, mode: mode})
 	X.BindKey("-", rl.SelfInserter("ー"))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		X.BindKey(keys.Code(upperRomaji[i:i+1]), &_Upper{H: byte(unicode.ToLower(c)), K: K})
+		u := &_Upper{H: byte(unicode.ToLower(c)), K: K, M: mode}
+		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
 
 	const consonantButN = "ksthmyrwfgzdbpcj"
@@ -484,7 +494,7 @@ func (K *_Kana) enableRomaji(X canBindKey) {
 }
 
 func (M *Mode) enableHiragana(X canBindKey) {
-	hiragana.enableRomaji(X)
+	hiragana.enableRomaji(X, M)
 	X.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
 	X.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
 	X.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
