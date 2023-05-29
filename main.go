@@ -493,6 +493,8 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey(".", rl.SelfInserter("。"))
 	X.BindKey("q", &cmdQ{kana: K, mode: mode})
 	X.BindKey("-", rl.SelfInserter("ー"))
+	X.BindKey("[", rl.SelfInserter("「"))
+	X.BindKey("]", rl.SelfInserter("」"))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
@@ -516,7 +518,7 @@ func (M *Mode) enableHiragana(X canBindKey) {
 }
 
 func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	const values = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,.- \x07\n"
+	const values = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,.-[] \x07\n"
 	if M.saveMap == nil {
 		M.saveMap = map[keys.Code]rl.Command{}
 		for i := range values {
