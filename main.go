@@ -537,3 +537,13 @@ func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	}
 	return rl.CONTINUE
 }
+
+func hanToZen(c rune) rune {
+	if c < ' ' || c >= '\x7f' {
+		return c
+	}
+	if c == ' ' {
+		return '　'
+	}
+	return c - ' ' + '\uFF00'
+}
