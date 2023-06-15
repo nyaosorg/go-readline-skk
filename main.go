@@ -240,7 +240,7 @@ type Mode struct {
 	User          Jisyo
 	System        Jisyo
 	QueryPrompter QueryPrompter
-	saveMap       map[keys.Code]rl.Command
+	saveMap       []rl.Command
 }
 
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
@@ -513,28 +513,37 @@ func (M *Mode) enableHiragana(X canBindKey) {
 	hiragana.enableRomaji(X, M)
 	X.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
 	X.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
+	X.BindKey("L", rl.AnonymousCommand(M.largeL))
 	X.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
 	X.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdCtrlJ))
 }
 
-func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	const values = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz,.-[] \x07\n"
-	if M.saveMap == nil {
-		M.saveMap = map[keys.Code]rl.Command{}
-		for i := range values {
-			s := values[i : i+1]
-			M.saveMap[keys.Code(s)] = B.LookupCommand(s)
-		}
+func (M *Mode) backupKeyMap(km *rl.KeyMap) {
+	if M.saveMap != nil {
+		return
 	}
+	M.saveMap = make([]rl.Command, 0, 0x80)
+	for i := '\x00'; i <= '\x80'; i++ {
+		key := keys.Code(string(i))
+		val, _ := km.Lookup(key)
+		M.saveMap = append(M.saveMap, val)
+	}
+}
 
+func (M *Mode) restoreKeyMap(km *rl.KeyMap) {
+	for i, command := range M.saveMap {
+		km.BindKey(keys.Code(string(rune(i))), command)
+	}
+}
+
+func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+	M.backupKeyMap(&B.KeyMap)
 	M.enableHiragana(B)
 	return rl.CONTINUE
 }
 
 func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	for key, command := range M.saveMap {
-		B.BindKey(key, command)
-	}
+	M.restoreKeyMap(&B.KeyMap)
 	return rl.CONTINUE
 }
 
@@ -546,4 +555,28 @@ func hanToZen(c rune) rune {
 		return '　'
 	}
 	return c - ' ' + '\uFF00'
+}
+
+type zenkakuInserter rune
+
+func (z zenkakuInserter) String() string {
+	return "Insert-" + string(z)
+}
+
+func (z zenkakuInserter) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	B.InsertAndRepaint(string(z))
+	return rl.CONTINUE
+}
+
+func (M *Mode) unLargeL(ctx context.Context, B *rl.Buffer) rl.Result {
+	M.restoreKeyMap(&B.Editor.KeyMap)
+	return M.cmdEnableRomaji(ctx,B)
+}
+
+func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
+	for i := rune(' '); i < '\x7F'; i++ {
+		B.BindKey(keys.Code(string(i)), zenkakuInserter(hanToZen(i)))
+	}
+	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.unLargeL))
+	return rl.CONTINUE
 }
