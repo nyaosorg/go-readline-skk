@@ -183,11 +183,11 @@ type QueryPrompter interface {
 
 type QueryOnNextLine struct{}
 
-func (_ QueryOnNextLine) Prompt(w io.Writer, prompt string) (int, error) {
+func (QueryOnNextLine) Prompt(w io.Writer, prompt string) (int, error) {
 	return fmt.Fprintf(w, "\n%s ", prompt)
 }
 
-func (_ QueryOnNextLine) LineFeed(w io.Writer) (int, error) {
+func (QueryOnNextLine) LineFeed(w io.Writer) (int, error) {
 	return io.WriteString(w, "\r\x1B[K\x1B[A")
 }
 
