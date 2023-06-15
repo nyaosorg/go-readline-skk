@@ -570,7 +570,7 @@ func (z zenkakuInserter) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 
 func (M *Mode) unLargeL(ctx context.Context, B *rl.Buffer) rl.Result {
 	M.restoreKeyMap(&B.Editor.KeyMap)
-	return M.cmdEnableRomaji(ctx,B)
+	return M.cmdEnableRomaji(ctx, B)
 }
 
 func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
