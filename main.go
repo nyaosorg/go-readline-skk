@@ -477,6 +477,32 @@ func (c *cmdQ) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
+type cmdSlash struct {
+	mode *Mode
+	kana *_Kana
+}
+
+func (c *cmdSlash) String() string {
+	return "SKK-SLASH"
+}
+
+func (c *cmdSlash) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+	if seekMarker(B) >= 0 {
+		return rl.CONTINUE
+	}
+	c.mode.restoreKeyMap(&B.KeyMap)
+	B.InsertAndRepaint(markerWhite)
+	B.BindKey(" ", &rl.GoCommand{
+		Name: "SKK-SPACE-AFTER-SLASH",
+		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
+			rc := c.mode.cmdHenkan(ctx, B)
+			c.kana.enableRomaji(B, c.mode)
+			return rc
+		},
+	})
+	return rl.CONTINUE
+}
+
 type canBindKey interface {
 	BindKey(keys.Code, rl.Command)
 	LookupCommand(string) rl.Command
@@ -495,6 +521,7 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey("-", rl.SelfInserter("ー"))
 	X.BindKey("[", rl.SelfInserter("「"))
 	X.BindKey("]", rl.SelfInserter("」"))
+	X.BindKey("/", &cmdSlash{kana: K, mode: mode})
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
