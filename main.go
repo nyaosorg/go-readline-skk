@@ -492,12 +492,12 @@ type canBindKey interface {
 }
 
 func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
-	X.BindKey("a", rl.AnonymousCommand(K.cmdA))
-	X.BindKey("i", rl.AnonymousCommand(K.cmdI))
-	X.BindKey("u", rl.AnonymousCommand(K.cmdU))
-	X.BindKey("e", rl.AnonymousCommand(K.cmdE))
-	X.BindKey("o", rl.AnonymousCommand(K.cmdO))
-	X.BindKey("n", rl.AnonymousCommand(K.cmdN))
+	X.BindKey("a", &rl.GoCommand{Name: "SKK_A", Func: K.cmdA})
+	X.BindKey("i", &rl.GoCommand{Name: "SKK_I", Func: K.cmdI})
+	X.BindKey("u", &rl.GoCommand{Name: "SKK_U", Func: K.cmdU})
+	X.BindKey("e", &rl.GoCommand{Name: "SKK_E", Func: K.cmdE})
+	X.BindKey("o", &rl.GoCommand{Name: "SKK_O", Func: K.cmdO})
+	X.BindKey("n", &rl.GoCommand{Name: "SKK_N", Func: K.cmdN})
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
 	X.BindKey("q", &rl.GoCommand{Name: "SKK_Q", Func: mode.cmdQ})
@@ -522,11 +522,11 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 func (M *Mode) enableHiragana(X canBindKey) {
 	M.kana = hiragana
 	hiragana.enableRomaji(X, M)
-	X.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
-	X.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
-	X.BindKey("L", rl.AnonymousCommand(M.largeL))
-	X.BindKey(keys.CtrlG, rl.AnonymousCommand(M.cmdCtrlG))
-	X.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdCtrlJ))
+	X.BindKey(" ", &rl.GoCommand{Name: "SKK_SPACE", Func: M.cmdHenkan})
+	X.BindKey("l", &rl.GoCommand{Name: "SKK_L", Func: M.cmdDisableRomaji})
+	X.BindKey("L", &rl.GoCommand{Name: "SKK_LARGE_L", Func: M.largeL})
+	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CTRL_G", Func: M.cmdCtrlG})
+	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_CTRL_J", Func: M.cmdCtrlJ})
 }
 
 func (M *Mode) backupKeyMap(km *rl.KeyMap) {
@@ -568,11 +568,6 @@ func hanToZen(c rune) rune {
 	return c - ' ' + '\uFF00'
 }
 
-func (M *Mode) unLargeL(ctx context.Context, B *rl.Buffer) rl.Result {
-	M.restoreKeyMap(&B.Editor.KeyMap)
-	return M.cmdEnableRomaji(ctx, B)
-}
-
 func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
 	for i := rune(' '); i < '\x7F'; i++ {
 		z := string(hanToZen(i))
@@ -583,6 +578,12 @@ func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
 				return rl.CONTINUE
 			}})
 	}
-	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.unLargeL))
+	B.BindKey(keys.CtrlJ, &rl.GoCommand{
+		Name: "SKK_CTRL_J_ON_LARGE_L",
+		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
+			M.restoreKeyMap(&B.Editor.KeyMap)
+			return M.cmdEnableRomaji(ctx, B)
+		},
+	})
 	return rl.CONTINUE
 }
