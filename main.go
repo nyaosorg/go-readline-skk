@@ -171,7 +171,7 @@ type _Trigger struct {
 }
 
 func (trig *_Trigger) String() string {
-	return "HENKAN-TRIGGER-" + string(trig.Key)
+	return "SKK_HENKAN_TRIGGER_" + string(trig.Key)
 }
 
 type QueryPrompter interface {
@@ -432,7 +432,7 @@ type smallTsuChecker struct {
 }
 
 func (s *smallTsuChecker) String() string {
-	return "small tsu checker for " + s.post
+	return "SKK_SMALL_TSU_CHCKER_FOR_" + s.post
 }
 
 func (s *smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
@@ -476,7 +476,7 @@ func (M *Mode) cmdSlash(ctx context.Context, B *rl.Buffer) rl.Result {
 	M.restoreKeyMap(&B.KeyMap)
 	B.InsertAndRepaint(markerWhite)
 	B.BindKey(" ", &rl.GoCommand{
-		Name: "SKK-SPACE-AFTER-SLASH",
+		Name: "SKK_SPACE_AFTER_SLASH",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			rc := M.cmdHenkan(ctx, B)
 			M.kana.enableRomaji(B, M)
