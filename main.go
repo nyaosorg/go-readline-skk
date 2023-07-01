@@ -167,7 +167,6 @@ const (
 
 type _Trigger struct {
 	Key byte
-	K   *_Kana
 	M   *Mode
 }
 
@@ -241,6 +240,7 @@ type Mode struct {
 	System        Jisyo
 	QueryPrompter QueryPrompter
 	saveMap       []rl.Command
+	kana          *_Kana
 }
 
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
@@ -356,7 +356,7 @@ func (trig *_Trigger) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 
 		var postfix string
 		if index := strings.IndexByte("aiueo", trig.Key); index >= 0 {
-			postfix = trig.K.table1[index]
+			postfix = trig.M.kana.table1[index]
 		} else {
 			postfix = string(trig.Key)
 		}
@@ -365,15 +365,15 @@ func (trig *_Trigger) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.InsertAndRepaint(markerWhite)
 	switch trig.Key {
 	case 'a':
-		return trig.K.cmdA(ctx, B)
+		return trig.M.kana.cmdA(ctx, B)
 	case 'i':
-		return trig.K.cmdI(ctx, B)
+		return trig.M.kana.cmdI(ctx, B)
 	case 'u':
-		return trig.K.cmdU(ctx, B)
+		return trig.M.kana.cmdU(ctx, B)
 	case 'e':
-		return trig.K.cmdE(ctx, B)
+		return trig.M.kana.cmdE(ctx, B)
 	case 'o':
-		return trig.K.cmdO(ctx, B)
+		return trig.M.kana.cmdO(ctx, B)
 	}
 	B.InsertAndRepaint(string(trig.Key))
 	return rl.CONTINUE
@@ -463,40 +463,23 @@ func (M *Mode) cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-type cmdQ struct {
-	mode *Mode
-	kana *_Kana
-}
-
-func (c *cmdQ) String() string {
-	return "SWITCH-KANA"
-}
-
-func (c *cmdQ) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	kanaTable[c.kana.switchTo].enableRomaji(B, c.mode)
+func (m *Mode) cmdQ(_ context.Context, B *rl.Buffer) rl.Result {
+	m.kana = kanaTable[m.kana.switchTo]
+	m.kana.enableRomaji(B, m)
 	return rl.CONTINUE
 }
 
-type cmdSlash struct {
-	mode *Mode
-	kana *_Kana
-}
-
-func (c *cmdSlash) String() string {
-	return "SKK-SLASH"
-}
-
-func (c *cmdSlash) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdSlash(ctx context.Context, B *rl.Buffer) rl.Result {
 	if seekMarker(B) >= 0 {
 		return rl.CONTINUE
 	}
-	c.mode.restoreKeyMap(&B.KeyMap)
+	M.restoreKeyMap(&B.KeyMap)
 	B.InsertAndRepaint(markerWhite)
 	B.BindKey(" ", &rl.GoCommand{
 		Name: "SKK-SPACE-AFTER-SLASH",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
-			rc := c.mode.cmdHenkan(ctx, B)
-			c.kana.enableRomaji(B, c.mode)
+			rc := M.cmdHenkan(ctx, B)
+			M.kana.enableRomaji(B, M)
 			return rc
 		},
 	})
@@ -517,15 +500,15 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey("n", rl.AnonymousCommand(K.cmdN))
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
-	X.BindKey("q", &cmdQ{kana: K, mode: mode})
+	X.BindKey("q", &rl.GoCommand{Name: "SKK_Q", Func: mode.cmdQ})
 	X.BindKey("-", rl.SelfInserter("ー"))
 	X.BindKey("[", rl.SelfInserter("「"))
 	X.BindKey("]", rl.SelfInserter("」"))
-	X.BindKey("/", &cmdSlash{kana: K, mode: mode})
+	X.BindKey("/", &rl.GoCommand{Name: "SKK_SLASH", Func: mode.cmdSlash})
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
-		u := &_Trigger{Key: byte(unicode.ToLower(c)), K: K, M: mode}
+		u := &_Trigger{Key: byte(unicode.ToLower(c)), M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
 
@@ -537,6 +520,7 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 }
 
 func (M *Mode) enableHiragana(X canBindKey) {
+	M.kana = hiragana
 	hiragana.enableRomaji(X, M)
 	X.BindKey(" ", rl.AnonymousCommand(M.cmdHenkan))
 	X.BindKey("l", rl.AnonymousCommand(M.cmdDisableRomaji))
@@ -584,17 +568,6 @@ func hanToZen(c rune) rune {
 	return c - ' ' + '\uFF00'
 }
 
-type zenkakuInserter rune
-
-func (z zenkakuInserter) String() string {
-	return "Insert-" + string(z)
-}
-
-func (z zenkakuInserter) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	B.InsertAndRepaint(string(z))
-	return rl.CONTINUE
-}
-
 func (M *Mode) unLargeL(ctx context.Context, B *rl.Buffer) rl.Result {
 	M.restoreKeyMap(&B.Editor.KeyMap)
 	return M.cmdEnableRomaji(ctx, B)
@@ -602,7 +575,13 @@ func (M *Mode) unLargeL(ctx context.Context, B *rl.Buffer) rl.Result {
 
 func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
 	for i := rune(' '); i < '\x7F'; i++ {
-		B.BindKey(keys.Code(string(i)), zenkakuInserter(hanToZen(i)))
+		z := string(hanToZen(i))
+		B.BindKey(keys.Code(string(i)), &rl.GoCommand{
+			Name: "SKK_INSERT_" + z,
+			Func: func(_ context.Context, B *rl.Buffer) rl.Result {
+				B.InsertAndRepaint(z)
+				return rl.CONTINUE
+			}})
 	}
 	B.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.unLargeL))
 	return rl.CONTINUE
