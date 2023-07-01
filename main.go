@@ -210,6 +210,16 @@ func (q *QueryOnCurrentLine) Recurse(originalPrompt string) QueryPrompter {
 	return &QueryOnCurrentLine{OriginalPrompt: originalPrompt}
 }
 
+func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
+	B.Out.WriteString("\x1B[?25h")
+	M.QueryPrompter.Prompt(B.Out, prompt)
+	B.Out.Flush()
+	rc, err := B.GetKey()
+	M.QueryPrompter.LineFeed(B.Out)
+	B.RepaintAfterPrompt()
+	return rc, err
+}
+
 func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
 	B.Out.WriteString("\x1B[?25h")
 	B.Out.Flush()
@@ -267,6 +277,8 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 	return newWord, true
 }
 
+const listingStartIndex = 4
+
 func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
 	list, found := M.User[source]
 	if !found {
@@ -311,8 +323,45 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 					return rl.CONTINUE
 				}
 			}
-			candidate, _, _ = strings.Cut(list[current], ";")
-			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
+			if current >= listingStartIndex {
+				for {
+					var buffer strings.Builder
+					_current := current
+					for _, key := range "ASDFJKL:" {
+						if _current >= len(list) {
+							break
+						}
+						candidate, _, _ = strings.Cut(list[_current], ";")
+						fmt.Fprintf(&buffer, "%c:%s ", key, candidate)
+						_current++
+					}
+					fmt.Fprintf(&buffer, "[残り %d]", len(list)-_current)
+					key, err := M.ask1(B, buffer.String())
+					if err == nil {
+						if index := strings.Index("asdfjkl:", key); index >= 0 {
+							candidate, _, _ = strings.Cut(list[current+index], ";")
+							B.ReplaceAndRepaint(markerPos, candidate)
+							return rl.CONTINUE
+						} else if key == " " {
+							current = _current
+						} else if key == "x" {
+							current -= len("ASDFJKL:")
+							if current < listingStartIndex {
+								if current < 0 {
+									current = 0
+								}
+								break
+							}
+						} else if key == string(keys.CtrlG) {
+							B.ReplaceAndRepaint(markerPos, markerWhite+source)
+							return rl.CONTINUE
+						}
+					}
+				}
+			} else {
+				candidate, _, _ = strings.Cut(list[current], ";")
+				B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
+			}
 		} else if input == "x" {
 			current--
 			if current < 0 {
