@@ -23,6 +23,7 @@ func mains() error {
 	if err != nil {
 		return err
 	}
+	skk1.System.Load("SKK-JISYO.emoji")
 
 	var ed readline.Editor
 	ed.BindKey(keys.CtrlJ, skk1)
