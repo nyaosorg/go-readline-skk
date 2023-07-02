@@ -44,7 +44,7 @@ func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
 
 // String returns the name as the command starting SKK
 func (M *Mode) String() string {
-	return "START-SKK"
+	return "SKK_MODE"
 }
 
 // Call is readline.Command to start SKK henkan mode.
@@ -60,7 +60,7 @@ func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
 	if err != nil {
 		return err
 	}
-	rl.GlobalKeyMap.BindKey(keys.CtrlJ, rl.AnonymousCommand(M.cmdEnableRomaji))
+	rl.GlobalKeyMap.BindKey(keys.CtrlJ, M)
 	return nil
 }
 
