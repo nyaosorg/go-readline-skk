@@ -20,7 +20,7 @@ func (j Jisyo) Load(filename string) error {
 		return err
 	}
 	defer fd.Close()
-	return j.ReadEucJp(fd)
+	return j.ReadWithPragma(fd)
 }
 
 // Load reads the contents of an dictionary from io.Reader as EUC-JP
@@ -29,30 +29,82 @@ func (j Jisyo) ReadEucJp(r io.Reader) error {
 	return j.Read(decoder.Reader(r))
 }
 
+func (j Jisyo) readOne(line string) {
+	if len(line) <= 0 || line[0] == ';' {
+		return
+	}
+	source, lists, ok := strings.Cut(line, " /")
+	if !ok {
+		return
+	}
+	values := []string{}
+	for {
+		one, rest, ok := strings.Cut(lists, "/")
+		if one != "" {
+			values = append(values, one)
+		}
+		if !ok {
+			break
+		}
+		lists = rest
+	}
+	j[source] = values
+}
+
+func pragma(line string) map[string]string {
+	_, body, ok := strings.Cut(line, "-*-")
+	if !ok {
+		return nil
+	}
+	body, _, ok = strings.Cut(body, "-*-")
+	if !ok {
+		return nil
+	}
+	m := map[string]string{}
+	for ok {
+		var token string
+		token, body, ok = strings.Cut(body, ";")
+		if key, value, valid := strings.Cut(token, ":"); valid {
+			m[strings.TrimSpace(key)] = strings.TrimSpace(value)
+		}
+	}
+	return m
+}
+
 // Load reads the contents of an dictionary from io.Reader as UTF8
 func (j Jisyo) Read(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Text()
-		if len(line) <= 0 || line[0] == ';' {
-			continue
+		j.readOne(line)
+	}
+	return sc.Err()
+}
+
+func (j Jisyo) ReadWithPragma(r io.Reader) error {
+	sc := bufio.NewScanner(r)
+	decoder := japanese.EUCJP.NewDecoder()
+	f := func(s string) string {
+		if utf8, err := decoder.String(s); err == nil {
+			return utf8
 		}
-		source, lists, ok := strings.Cut(line, " /")
-		if !ok {
-			continue
-		}
-		values := []string{}
-		for {
-			one, rest, ok := strings.Cut(lists, "/")
-			if one != "" {
-				values = append(values, one)
+		return s
+	}
+	if sc.Scan() {
+		line := f(sc.Text())
+		if len(line) > 0 && line[0] == ';' {
+			if m := pragma(line[1:]); m != nil && m["coding"] == "utf-8" {
+				f = func(s string) string {
+					return s
+				}
 			}
-			if !ok {
-				break
-			}
-			lists = rest
+		} else {
+			j.readOne(line)
 		}
-		j[source] = values
+	}
+
+	for sc.Scan() {
+		j.readOne(f(sc.Text()))
 	}
 	return sc.Err()
 }
