@@ -37,7 +37,7 @@ func (j Jisyo) readOne(line string) {
 	if !ok {
 		return
 	}
-	values := []string{}
+	values := j[source]
 	for {
 		one, rest, ok := strings.Cut(lists, "/")
 		if one != "" {
