@@ -86,7 +86,7 @@ func (M *Mode) SaveUserJisyo(filename string) error {
 	if err := fd.Close(); err != nil {
 		return err
 	}
-	if err := os.Rename(filename, filename+".BAK"); err != nil {
+	if err := os.Rename(filename, filename+".BAK"); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return os.Rename(tmpName, filename)
