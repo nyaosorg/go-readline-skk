@@ -9,11 +9,11 @@ import (
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
-	"github.com/nyaosorg/go-windows-dbg"
+	// "github.com/nyaosorg/go-windows-dbg"
 )
 
 func debug(text string) {
-	dbg.Println(text)
+	// dbg.Println(text)
 }
 
 type _Kana struct {
