@@ -211,7 +211,6 @@ func (q *QueryOnCurrentLine) Recurse(originalPrompt string) QueryPrompter {
 }
 
 func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
-	B.Out.WriteString("\x1B[?25h")
 	M.QueryPrompter.Prompt(B.Out, prompt)
 	B.Out.Flush()
 	rc, err := B.GetKey()
@@ -221,8 +220,6 @@ func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
 }
 
 func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
-	B.Out.WriteString("\x1B[?25h")
-	B.Out.Flush()
 	inputNewWord := &rl.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
 			return M.QueryPrompter.Prompt(w, prompt)
