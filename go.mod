@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/nyaosorg/go-readline-ny v0.13.1
+	github.com/nyaosorg/go-windows-dbg v0.0.0-20210914123807-2acba179a4e5
 	golang.org/x/text v0.9.0
 )
 
