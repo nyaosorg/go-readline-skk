@@ -9,7 +9,12 @@ import (
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-windows-dbg"
 )
+
+func debug(text string) {
+	dbg.Println(text)
+}
 
 type _Kana struct {
 	table1   []string
@@ -566,6 +571,7 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 }
 
 func (M *Mode) enableHiragana(X canBindKey) {
+	debug("enableHiragana")
 	M.kana = hiragana
 	hiragana.enableRomaji(X, M)
 	X.BindKey(" ", &rl.GoCommand{Name: "SKK_SPACE", Func: M.cmdHenkan})
@@ -579,6 +585,7 @@ func (M *Mode) backupKeyMap(km *rl.KeyMap) {
 	if M.saveMap != nil {
 		return
 	}
+	debug("backupKeyMap")
 	M.saveMap = make([]rl.Command, 0, 0x80)
 	for i := '\x00'; i <= '\x80'; i++ {
 		key := keys.Code(string(i))
@@ -588,18 +595,21 @@ func (M *Mode) backupKeyMap(km *rl.KeyMap) {
 }
 
 func (M *Mode) restoreKeyMap(km *rl.KeyMap) {
+	debug("restoreKeyMap")
 	for i, command := range M.saveMap {
 		km.BindKey(keys.Code(string(rune(i))), command)
 	}
 }
 
 func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+	debug("cmdEnableRomaji")
 	M.backupKeyMap(&B.KeyMap)
 	M.enableHiragana(B)
 	return rl.CONTINUE
 }
 
 func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
+	debug("cmdDisableRomaji")
 	M.restoreKeyMap(&B.KeyMap)
 	return rl.CONTINUE
 }
