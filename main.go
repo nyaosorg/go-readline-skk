@@ -531,7 +531,7 @@ func (M *Mode) cmdSlash(ctx context.Context, B *rl.Buffer) rl.Result {
 		Name: "SKK_SPACE_AFTER_SLASH",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			rc := M.cmdHenkan(ctx, B)
-			M.kana.enableRomaji(B, M)
+			M.cmdEnableRomaji(ctx, B)
 			return rc
 		},
 	})
