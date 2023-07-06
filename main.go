@@ -240,6 +240,7 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 			System:        M.System,
 			QueryPrompter: M.QueryPrompter.Recurse(prompt),
 		}
+		m.backupKeyMap(&inputNewWord.KeyMap)
 		m.enableHiragana(inputNewWord)
 	}
 	defer B.RepaintAfterPrompt()
