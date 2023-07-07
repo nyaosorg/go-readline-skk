@@ -448,7 +448,7 @@ func removeOne(B *rl.Buffer, pos int) {
 	B.RepaintAfterPrompt()
 }
 
-func (M *Mode) cmdHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdStartHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
 		B.InsertAndRepaint(" ")
@@ -496,41 +496,41 @@ func (s *smallTsuChecker) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (M *Mode) cmdCtrlJ(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdKakutei(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
-		return M.cmdDisableRomaji(ctx, B)
+		return M.cmdLatinMode(ctx, B)
 	}
 	// kakutei
 	removeOne(B, markerPos)
 	return rl.CONTINUE
 }
 
-func (M *Mode) cmdCtrlG(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdCancel(ctx context.Context, B *rl.Buffer) rl.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
-		return M.cmdDisableRomaji(ctx, B)
+		return M.cmdLatinMode(ctx, B)
 	}
 	B.ReplaceAndRepaint(markerPos, "")
 	return rl.CONTINUE
 }
 
-func (m *Mode) cmdQ(_ context.Context, B *rl.Buffer) rl.Result {
+func (m *Mode) cmdToggleKana(_ context.Context, B *rl.Buffer) rl.Result {
 	m.kana = kanaTable[m.kana.switchTo]
 	m.kana.enableRomaji(B, m)
 	return rl.CONTINUE
 }
 
-func (M *Mode) cmdSlash(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdAbbrevMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	if seekMarker(B) >= 0 {
 		return rl.CONTINUE
 	}
 	M.restoreKeyMap(&B.KeyMap)
 	B.InsertAndRepaint(markerWhite)
 	B.BindKey(" ", &rl.GoCommand{
-		Name: "SKK_SPACE_AFTER_SLASH",
+		Name: "SKK_ABBREV_START_HENKAN",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
-			rc := M.cmdHenkan(ctx, B)
+			rc := M.cmdStartHenkan(ctx, B)
 			M.cmdEnableRomaji(ctx, B)
 			return rc
 		},
@@ -552,11 +552,11 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey("n", &rl.GoCommand{Name: "SKK_N", Func: K.cmdN})
 	X.BindKey(",", rl.SelfInserter("、"))
 	X.BindKey(".", rl.SelfInserter("。"))
-	X.BindKey("q", &rl.GoCommand{Name: "SKK_Q", Func: mode.cmdQ})
+	X.BindKey("q", &rl.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
 	X.BindKey("-", rl.SelfInserter("ー"))
 	X.BindKey("[", rl.SelfInserter("「"))
 	X.BindKey("]", rl.SelfInserter("」"))
-	X.BindKey("/", &rl.GoCommand{Name: "SKK_SLASH", Func: mode.cmdSlash})
+	X.BindKey("/", &rl.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
@@ -575,11 +575,11 @@ func (M *Mode) enableHiragana(X canBindKey) {
 	debug("enableHiragana")
 	M.kana = hiragana
 	hiragana.enableRomaji(X, M)
-	X.BindKey(" ", &rl.GoCommand{Name: "SKK_SPACE", Func: M.cmdHenkan})
-	X.BindKey("l", &rl.GoCommand{Name: "SKK_L", Func: M.cmdDisableRomaji})
-	X.BindKey("L", &rl.GoCommand{Name: "SKK_LARGE_L", Func: M.largeL})
-	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CTRL_G", Func: M.cmdCtrlG})
-	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_CTRL_J", Func: M.cmdCtrlJ})
+	X.BindKey(" ", &rl.GoCommand{Name: "SKK_START_HENKAN", Func: M.cmdStartHenkan})
+	X.BindKey("l", &rl.GoCommand{Name: "SKK_LATIN_MODE", Func: M.cmdLatinMode})
+	X.BindKey("L", &rl.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: M.cmdJis0208LatinMode})
+	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CANCEL", Func: M.cmdCancel})
+	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: M.cmdKakutei})
 }
 
 func (M *Mode) backupKeyMap(km *rl.KeyMap) {
@@ -609,8 +609,8 @@ func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-func (M *Mode) cmdDisableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	debug("cmdDisableRomaji")
+func (M *Mode) cmdLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+	debug("cmdLatinMode")
 	M.restoreKeyMap(&B.KeyMap)
 	return rl.CONTINUE
 }
@@ -625,18 +625,18 @@ func hanToZen(c rune) rune {
 	return c - ' ' + '\uFF00'
 }
 
-func (M *Mode) largeL(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	for i := rune(' '); i < '\x7F'; i++ {
 		z := string(hanToZen(i))
 		B.BindKey(keys.Code(string(i)), &rl.GoCommand{
-			Name: "SKK_INSERT_" + z,
+			Name: "SKK_JISX0208_LATIN_INSERT_" + z,
 			Func: func(_ context.Context, B *rl.Buffer) rl.Result {
 				B.InsertAndRepaint(z)
 				return rl.CONTINUE
 			}})
 	}
 	B.BindKey(keys.CtrlJ, &rl.GoCommand{
-		Name: "SKK_CTRL_J_ON_LARGE_L",
+		Name: "SKK_JISX0208_LATIN_KAKUTEI",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			M.restoreKeyMap(&B.Editor.KeyMap)
 			return M.cmdEnableRomaji(ctx, B)
