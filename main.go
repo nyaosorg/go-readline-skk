@@ -371,7 +371,8 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 				B.ReplaceAndRepaint(markerPos, markerWhite+source)
 				return rl.CONTINUE
 			}
-			B.ReplaceAndRepaint(markerPos, markerBlack+list[current]+postfix)
+			candidate, _, _ = strings.Cut(list[current], ";")
+			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 		} else if input == "X" {
 			prompt := fmt.Sprintf(`really purse "%s /%s/ "?(yes or no)`, source, list[current])
 			ans, err := M.ask(ctx, B, prompt, false)
