@@ -75,6 +75,7 @@ func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
 // and replaced with the file of filename after closing.
 // The original file is renamed to filename + ".BAK".
 func (M *Mode) SaveUserJisyo(filename string) error {
+	filename = expandEnv(filename)
 	tmpName := filename + ".TMP"
 	fd, err := os.Create(tmpName)
 	if err != nil {

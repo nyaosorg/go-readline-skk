@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"os/user"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -13,9 +15,26 @@ import (
 // Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo map[string][]string
 
+var percentEnv = regexp.MustCompile(`%.*?%`)
+
+func expandEnv(s string) string {
+	if len(s) > 0 && s[0] == '~' {
+		if u, err := user.Current(); err == nil {
+			s = u.HomeDir + s[1:]
+		}
+	}
+	return percentEnv.ReplaceAllStringFunc(s, func(m string) string {
+		name := m[1 : len(m)-1]
+		if value, ok := os.LookupEnv(name); ok {
+			return value
+		}
+		return m
+	})
+}
+
 // Load reads the contents of an dictionary from a file as EUC-JP.
 func (j Jisyo) Load(filename string) error {
-	fd, err := os.Open(filename)
+	fd, err := os.Open(expandEnv(filename))
 	if err != nil {
 		return err
 	}
