@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -256,16 +257,92 @@ type Mode struct {
 	kana          *_Kana
 }
 
+var rxNumber = regexp.MustCompile(`[0-9]+`)
+
+var rxToNumber = regexp.MustCompile(`#[0123459]`)
+
+var kansuji = map[rune]string{
+	'0': "〇",
+	'1': "一",
+	'2': "二",
+	'3': "三",
+	'4': "四",
+	'5': "五",
+	'6': "六",
+	'7': "七",
+	'8': "八",
+	'9': "九",
+}
+
+func numberToKanji(s string) string {
+	var buffer strings.Builder
+	for _, r := range s {
+		buffer.WriteString(kansuji[r])
+	}
+	return buffer.String()
+}
+
+func hanToZenString(s string) string {
+	var buffer strings.Builder
+	for _, r := range s {
+		buffer.WriteRune(hanToZen(r))
+	}
+	return buffer.String()
+}
+
+func (M *Mode) _lookup(source string) ([]string, bool) {
+	list, ok := M.User[source]
+	if ok {
+		return list, true
+	}
+	list, ok = M.System[source]
+	return list, ok
+}
+
+func (M *Mode) lookup(source string) ([]string, bool) {
+	list, ok := M._lookup(source)
+	if ok {
+		return list, ok
+	}
+	loc := rxNumber.FindStringIndex(source)
+	if loc == nil {
+		return nil, false
+	}
+	number := source[loc[0]:loc[1]]
+	source = source[:loc[0]] + "#" + source[loc[1]:]
+	list, ok = M._lookup(source)
+	if !ok {
+		return nil, false
+	}
+	newList := make([]string, 0, len(list))
+	for _, s := range list {
+		tmp := rxToNumber.ReplaceAllStringFunc(s, func(ss string) string {
+			switch ss[1] {
+			case '0': // 無変換
+				return number
+			case '1': // 全角化
+				return hanToZenString(number)
+			case '2': // 漢数字で位取りあり
+				return numberToKanji(number)
+			case '3': // 漢数字で位取りなし
+				return numberToKanji(number) // あとでやる
+			default:
+				return number
+			}
+		})
+		newList = append(newList, tmp)
+	}
+	return newList, true
+}
+
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
 	newWord, err := M.ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
 	}
-	list, ok := M.User[source]
-	if !ok {
-		list = M.System[source]
-	}
+	list, _ := M.lookup(source)
+
 	// 二重登録よけ
 	for _, candidate := range list {
 		if candidate == newWord {
@@ -283,10 +360,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 const listingStartIndex = 4
 
 func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
-	list, found := M.User[source]
-	if !found {
-		list, found = M.System[source]
-	}
+	list, found := M.lookup(source)
 	if !found {
 		// 辞書登録モード
 		result, ok := M.newCandidate(ctx, B, source)
