@@ -632,6 +632,7 @@ func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
 	X.BindKey("[", rl.SelfInserter("「"))
 	X.BindKey("]", rl.SelfInserter("」"))
 	X.BindKey("/", &rl.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
+	X.BindKey("Q", rl.SelfInserter(markerWhite))
 
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
