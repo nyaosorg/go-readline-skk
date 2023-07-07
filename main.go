@@ -542,7 +542,7 @@ func (K *_Kana) cmdN(ctx context.Context, B *rl.Buffer) rl.Result {
 	B.InsertAndRepaint("n")
 	input, _ := B.GetKey()
 	switch input {
-	case "n":
+	case "n", "'":
 		B.ReplaceAndRepaint(B.Cursor-1, K.n)
 		return rl.CONTINUE
 	case "a", "i", "u", "e", "o", "y":
