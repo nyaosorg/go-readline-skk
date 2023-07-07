@@ -374,7 +374,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			candidate, _, _ = strings.Cut(list[current], ";")
 			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 		} else if input == "X" {
-			prompt := fmt.Sprintf(`really purse "%s /%s/ "?(yes or no)`, source, list[current])
+			prompt := fmt.Sprintf(`really purge "%s /%s/ "?(yes or no)`, source, list[current])
 			ans, err := M.ask(ctx, B, prompt, false)
 			if err == nil {
 				if ans == "y" || ans == "yes" {
