@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
@@ -15,25 +14,21 @@ import (
 )
 
 func mains() error {
-	customJisyo := ".skk-jisyo"
-	if home, err := os.UserHomeDir(); err == nil {
-		customJisyo = filepath.Join(home, customJisyo)
-	}
-	skk1, err := skk.Load(customJisyo, "SKK-JISYO.L")
+	skkMode, err := skk.Load("~/.skk-jisyo-nyagos", "SKK-JISYO.L")
 	if err != nil {
 		return err
 	}
-	skk1.System.Load("SKK-JISYO.emoji")
+	skkMode.System.Load("SKK-JISYO.emoji")
 
 	var ed readline.Editor
-	ed.BindKey(keys.CtrlJ, skk1)
+	ed.BindKey(keys.CtrlJ, skkMode)
 	text, err := ed.ReadLine(context.Background())
 	if err != nil {
 		return err
 	}
 	fmt.Println("TEXT:", text)
 
-	skk1.SaveUserJisyo(customJisyo + ".test")
+	skkMode.SaveUserJisyo("~/.skk-jisyo-nyagos")
 	return nil
 }
 

@@ -7,18 +7,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
 )
 
 func mains() error {
-	customJisyo := ".skk-jisyo"
-	if home, err := os.UserHomeDir(); err == nil {
-		customJisyo = filepath.Join(home, customJisyo)
-	}
-	if err := skk.Setup(customJisyo, "SKK-JISYO.L"); err != nil {
+	// ~/ はパッケージ側で展開されます
+	if err := skk.Setup("~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
 		return err
 	}
 
