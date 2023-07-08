@@ -31,47 +31,47 @@ func (trig *_Trigger) String() string {
 	return "SKK_HENKAN_TRIGGER_" + string(trig.Key)
 }
 
-type QueryPrompter interface {
-	Prompt(io.Writer, string) (int, error)
-	LineFeed(io.Writer) (int, error)
-	Recurse(string) QueryPrompter
+type MiniBuffer interface {
+	Enter(io.Writer, string) (int, error)
+	Leave(io.Writer) (int, error)
+	Recurse(string) MiniBuffer
 }
 
-type QueryOnNextLine struct{}
+type MiniBufferOnNextLine struct{}
 
-func (QueryOnNextLine) Prompt(w io.Writer, prompt string) (int, error) {
+func (MiniBufferOnNextLine) Enter(w io.Writer, prompt string) (int, error) {
 	return fmt.Fprintf(w, "\n%s ", prompt)
 }
 
-func (QueryOnNextLine) LineFeed(w io.Writer) (int, error) {
+func (MiniBufferOnNextLine) Leave(w io.Writer) (int, error) {
 	return io.WriteString(w, "\r\x1B[K\x1B[A")
 }
 
-func (q QueryOnNextLine) Recurse(originalPrompt string) QueryPrompter {
-	return &QueryOnCurrentLine{OriginalPrompt: originalPrompt}
+func (q MiniBufferOnNextLine) Recurse(originalPrompt string) MiniBuffer {
+	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
 }
 
-type QueryOnCurrentLine struct {
+type MiniBufferOnCurrentLine struct {
 	OriginalPrompt string
 }
 
-func (q *QueryOnCurrentLine) Prompt(w io.Writer, prompt string) (int, error) {
+func (q *MiniBufferOnCurrentLine) Enter(w io.Writer, prompt string) (int, error) {
 	return fmt.Fprintf(w, "\r%s ", prompt)
 }
 
-func (q *QueryOnCurrentLine) LineFeed(w io.Writer) (int, error) {
+func (q *MiniBufferOnCurrentLine) Leave(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, "\r%s \x1B[K", q.OriginalPrompt)
 }
 
-func (q *QueryOnCurrentLine) Recurse(originalPrompt string) QueryPrompter {
-	return &QueryOnCurrentLine{OriginalPrompt: originalPrompt}
+func (q *MiniBufferOnCurrentLine) Recurse(originalPrompt string) MiniBuffer {
+	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
 }
 
 func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
-	M.QueryPrompter.Prompt(B.Out, prompt)
+	M.MiniBuffer.Enter(B.Out, prompt)
 	B.Out.Flush()
 	rc, err := B.GetKey()
-	M.QueryPrompter.LineFeed(B.Out)
+	M.MiniBuffer.Leave(B.Out)
 	B.RepaintAfterPrompt()
 	return rc, err
 }
@@ -79,18 +79,18 @@ func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
 func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
 	inputNewWord := &rl.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
-			return M.QueryPrompter.Prompt(w, prompt)
+			return M.MiniBuffer.Enter(w, prompt)
 		},
 		Writer: B.Writer,
 		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
-			return M.QueryPrompter.LineFeed(w)
+			return M.MiniBuffer.Leave(w)
 		},
 	}
 	if ime {
 		m := &Mode{
-			User:          M.User,
-			System:        M.System,
-			QueryPrompter: M.QueryPrompter.Recurse(prompt),
+			User:       M.User,
+			System:     M.System,
+			MiniBuffer: M.MiniBuffer.Recurse(prompt),
 		}
 		m.backupKeyMap(&inputNewWord.KeyMap)
 		m.enableHiragana(inputNewWord)
@@ -101,11 +101,11 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	User          Jisyo
-	System        Jisyo
-	QueryPrompter QueryPrompter
-	saveMap       []rl.Command
-	kana          *_Kana
+	User       Jisyo
+	System     Jisyo
+	MiniBuffer MiniBuffer
+	saveMap    []rl.Command
+	kana       *_Kana
 }
 
 var rxNumber = regexp.MustCompile(`[0-9]+`)
