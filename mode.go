@@ -49,7 +49,8 @@ func (M *Mode) String() string {
 
 // Call is readline.Command to start SKK henkan mode.
 func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
-	return M.cmdEnableRomaji(ctx, B)
+	M.enable(B, hiragana)
+	return rl.CONTINUE
 }
 
 // Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.

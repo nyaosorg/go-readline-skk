@@ -92,8 +92,7 @@ func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (
 			System:     M.System,
 			MiniBuffer: M.MiniBuffer.Recurse(prompt),
 		}
-		m.backupKeyMap(&inputNewWord.KeyMap)
-		m.enableHiragana(inputNewWord)
+		m.enable(inputNewWord, hiragana)
 	}
 	defer B.RepaintAfterPrompt()
 	return inputNewWord.ReadLine(ctx)
@@ -397,8 +396,7 @@ func (M *Mode) cmdCancel(ctx context.Context, B *rl.Buffer) rl.Result {
 }
 
 func (m *Mode) cmdToggleKana(_ context.Context, B *rl.Buffer) rl.Result {
-	m.kana = kanaTable[m.kana.switchTo]
-	m.kana.enableRomaji(B, m)
+	m.enable(B, kanaTable[m.kana.switchTo])
 	return rl.CONTINUE
 }
 
@@ -406,51 +404,54 @@ func (M *Mode) cmdAbbrevMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	if seekMarker(B) >= 0 {
 		return rl.CONTINUE
 	}
-	M.restoreKeyMap(&B.KeyMap)
+	M.restoreKeyMap(B)
 	B.InsertAndRepaint(markerWhite)
 	B.BindKey(" ", &rl.GoCommand{
 		Name: "SKK_ABBREV_START_HENKAN",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			rc := M.cmdStartHenkan(ctx, B)
-			M.cmdEnableRomaji(ctx, B)
+			M.enable(B, hiragana)
 			return rc
 		},
 	})
 	return rl.CONTINUE
 }
 
-type canBindKey interface {
-	BindKey(keys.Code, rl.Command)
-	LookupCommand(string) rl.Command
+type canLookup interface {
+	Lookup(keys.Code) (rl.Command, bool)
 }
 
-func (K *_Kana) enableRomaji(X canBindKey, mode *Mode) {
+type canBindKey interface {
+	BindKey(keys.Code, rl.Command)
+}
+
+type canKeyMap interface {
+	canLookup
+	canBindKey
+}
+
+func (mode *Mode) enable(X canKeyMap, K *_Kana) {
+	mode.backupKeyMap(X)
+	mode.kana = K
 	for i := range romajiTrigger {
 		c := romajiTrigger[i : i+1]
 		X.BindKey(keys.Code(c), &_Romaji{kana: K, last: c})
 	}
-	X.BindKey("q", &rl.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
-	X.BindKey("/", &rl.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
-
 	const upperRomaji = "AIUEOKSTNHMYRWFGZDBPCJ"
 	for i, c := range upperRomaji {
 		u := &_Trigger{Key: byte(unicode.ToLower(c)), M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
+	X.BindKey("q", &rl.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
+	X.BindKey("/", &rl.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
+	X.BindKey(" ", &rl.GoCommand{Name: "SKK_START_HENKAN", Func: mode.cmdStartHenkan})
+	X.BindKey("l", &rl.GoCommand{Name: "SKK_LATIN_MODE", Func: mode.cmdLatinMode})
+	X.BindKey("L", &rl.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: mode.cmdJis0208LatinMode})
+	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CANCEL", Func: mode.cmdCancel})
+	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: mode.cmdKakutei})
 }
 
-func (M *Mode) enableHiragana(X canBindKey) {
-	debug("enableHiragana")
-	M.kana = hiragana
-	hiragana.enableRomaji(X, M)
-	X.BindKey(" ", &rl.GoCommand{Name: "SKK_START_HENKAN", Func: M.cmdStartHenkan})
-	X.BindKey("l", &rl.GoCommand{Name: "SKK_LATIN_MODE", Func: M.cmdLatinMode})
-	X.BindKey("L", &rl.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: M.cmdJis0208LatinMode})
-	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CANCEL", Func: M.cmdCancel})
-	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: M.cmdKakutei})
-}
-
-func (M *Mode) backupKeyMap(km *rl.KeyMap) {
+func (M *Mode) backupKeyMap(km canLookup) {
 	if M.saveMap != nil {
 		return
 	}
@@ -463,23 +464,16 @@ func (M *Mode) backupKeyMap(km *rl.KeyMap) {
 	}
 }
 
-func (M *Mode) restoreKeyMap(km *rl.KeyMap) {
+func (M *Mode) restoreKeyMap(km canBindKey) {
 	debug("restoreKeyMap")
 	for i, command := range M.saveMap {
 		km.BindKey(keys.Code(string(rune(i))), command)
 	}
 }
 
-func (M *Mode) cmdEnableRomaji(ctx context.Context, B *rl.Buffer) rl.Result {
-	debug("cmdEnableRomaji")
-	M.backupKeyMap(&B.KeyMap)
-	M.enableHiragana(B)
-	return rl.CONTINUE
-}
-
 func (M *Mode) cmdLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	debug("cmdLatinMode")
-	M.restoreKeyMap(&B.KeyMap)
+	M.restoreKeyMap(B)
 	return rl.CONTINUE
 }
 
@@ -507,7 +501,8 @@ func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result 
 		Name: "SKK_JISX0208_LATIN_KAKUTEI",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			M.restoreKeyMap(&B.Editor.KeyMap)
-			return M.cmdEnableRomaji(ctx, B)
+			M.enable(B, hiragana)
+			return rl.CONTINUE
 		},
 	})
 	return rl.CONTINUE
