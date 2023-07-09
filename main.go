@@ -3,7 +3,6 @@ package skk
 import (
 	"context"
 	"fmt"
-	"io"
 	"regexp"
 	"strings"
 	"unicode"
@@ -29,37 +28,6 @@ type _Trigger struct {
 
 func (trig *_Trigger) String() string {
 	return "SKK_HENKAN_TRIGGER_" + string(trig.Key)
-}
-
-func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
-	M.MiniBuffer.Enter(B.Out, prompt)
-	B.Out.Flush()
-	rc, err := B.GetKey()
-	M.MiniBuffer.Leave(B.Out)
-	B.RepaintAfterPrompt()
-	return rc, err
-}
-
-func (M *Mode) ask(ctx context.Context, B *rl.Buffer, prompt string, ime bool) (string, error) {
-	inputNewWord := &rl.Editor{
-		PromptWriter: func(w io.Writer) (int, error) {
-			return M.MiniBuffer.Enter(w, prompt)
-		},
-		Writer: B.Writer,
-		LineFeedWriter: func(_ rl.Result, w io.Writer) (int, error) {
-			return M.MiniBuffer.Leave(w)
-		},
-	}
-	if ime {
-		m := &Mode{
-			User:       M.User,
-			System:     M.System,
-			MiniBuffer: M.MiniBuffer.Recurse(prompt),
-		}
-		m.enable(inputNewWord, hiragana)
-	}
-	defer B.RepaintAfterPrompt()
-	return inputNewWord.ReadLine(ctx)
 }
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.

@@ -1,8 +1,11 @@
 package skk
 
 import (
+	"context"
 	"fmt"
 	"io"
+
+	"github.com/nyaosorg/go-readline-ny"
 )
 
 type MiniBuffer interface {
@@ -39,4 +42,35 @@ func (q *MiniBufferOnCurrentLine) Leave(w io.Writer) (int, error) {
 
 func (q *MiniBufferOnCurrentLine) Recurse(originalPrompt string) MiniBuffer {
 	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
+}
+
+func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
+	M.MiniBuffer.Enter(B.Out, prompt)
+	B.Out.Flush()
+	rc, err := B.GetKey()
+	M.MiniBuffer.Leave(B.Out)
+	B.RepaintAfterPrompt()
+	return rc, err
+}
+
+func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime bool) (string, error) {
+	inputNewWord := &readline.Editor{
+		PromptWriter: func(w io.Writer) (int, error) {
+			return M.MiniBuffer.Enter(w, prompt)
+		},
+		Writer: B.Writer,
+		LineFeedWriter: func(_ readline.Result, w io.Writer) (int, error) {
+			return M.MiniBuffer.Leave(w)
+		},
+	}
+	if ime {
+		m := &Mode{
+			User:       M.User,
+			System:     M.System,
+			MiniBuffer: M.MiniBuffer.Recurse(prompt),
+		}
+		m.enable(inputNewWord, hiragana)
+	}
+	defer B.RepaintAfterPrompt()
+	return inputNewWord.ReadLine(ctx)
 }
