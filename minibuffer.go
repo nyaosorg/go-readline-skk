@@ -21,7 +21,7 @@ func (MiniBufferOnNextLine) Enter(w io.Writer, prompt string) (int, error) {
 }
 
 func (MiniBufferOnNextLine) Leave(w io.Writer) (int, error) {
-	return io.WriteString(w, "\r\x1B[K\x1B[A")
+	return io.WriteString(w, "\x1B[F")
 }
 
 func (q MiniBufferOnNextLine) Recurse(originalPrompt string) MiniBuffer {
@@ -48,6 +48,7 @@ func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 	M.MiniBuffer.Enter(B.Out, prompt)
 	B.Out.Flush()
 	rc, err := B.GetKey()
+	io.WriteString(B.Out, "\x1B[2K")
 	M.MiniBuffer.Leave(B.Out)
 	B.RepaintAfterPrompt()
 	return rc, err
@@ -60,6 +61,7 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 		},
 		Writer: B.Writer,
 		LineFeedWriter: func(_ readline.Result, w io.Writer) (int, error) {
+			io.WriteString(w, "\x1B[2K")
 			return M.MiniBuffer.Leave(w)
 		},
 	}
