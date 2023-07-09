@@ -149,6 +149,14 @@ func (M *Mode) lookup(source string) ([]string, bool) {
 	return newList, true
 }
 
+func unshift[T any](list []T, value T) []T {
+	var zero T
+	list = append(list, zero)
+	copy(list[1:], list)
+	list[0] = value
+	return list
+}
+
 func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
 	newWord, err := M.ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
@@ -164,10 +172,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 		}
 	}
 	// リストの先頭に挿入
-	list = append(list, "")
-	copy(list[1:], list)
-	list[0] = newWord
-	M.User[source] = list
+	M.User[source] = unshift(list, newWord)
 	return newWord, true
 }
 
