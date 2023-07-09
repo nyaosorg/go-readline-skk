@@ -31,42 +31,6 @@ func (trig *_Trigger) String() string {
 	return "SKK_HENKAN_TRIGGER_" + string(trig.Key)
 }
 
-type MiniBuffer interface {
-	Enter(io.Writer, string) (int, error)
-	Leave(io.Writer) (int, error)
-	Recurse(string) MiniBuffer
-}
-
-type MiniBufferOnNextLine struct{}
-
-func (MiniBufferOnNextLine) Enter(w io.Writer, prompt string) (int, error) {
-	return fmt.Fprintf(w, "\n%s ", prompt)
-}
-
-func (MiniBufferOnNextLine) Leave(w io.Writer) (int, error) {
-	return io.WriteString(w, "\r\x1B[K\x1B[A")
-}
-
-func (q MiniBufferOnNextLine) Recurse(originalPrompt string) MiniBuffer {
-	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
-}
-
-type MiniBufferOnCurrentLine struct {
-	OriginalPrompt string
-}
-
-func (q *MiniBufferOnCurrentLine) Enter(w io.Writer, prompt string) (int, error) {
-	return fmt.Fprintf(w, "\r%s ", prompt)
-}
-
-func (q *MiniBufferOnCurrentLine) Leave(w io.Writer) (int, error) {
-	return fmt.Fprintf(w, "\r%s \x1B[K", q.OriginalPrompt)
-}
-
-func (q *MiniBufferOnCurrentLine) Recurse(originalPrompt string) MiniBuffer {
-	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
-}
-
 func (M *Mode) ask1(B *rl.Buffer, prompt string) (string, error) {
 	M.MiniBuffer.Enter(B.Out, prompt)
 	B.Out.Flush()
@@ -500,7 +464,7 @@ func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result 
 	B.BindKey(keys.CtrlJ, &rl.GoCommand{
 		Name: "SKK_JISX0208_LATIN_KAKUTEI",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
-			M.restoreKeyMap(&B.Editor.KeyMap)
+			M.restoreKeyMap(B)
 			M.enable(B, hiragana)
 			return rl.CONTINUE
 		},
