@@ -19,6 +19,12 @@ func debug(text string) {
 const (
 	markerWhite = "▽"
 	markerBlack = "▼"
+
+	msgHiragana = "[か]"
+	msgKatakana = "[カ]"
+	msgLatin    = ""
+	msgAbbrev   = "[aあ]"
+	msg0208     = "[英]"
 )
 
 type _Trigger struct {
@@ -334,6 +340,11 @@ func (M *Mode) cmdCancel(ctx context.Context, B *rl.Buffer) rl.Result {
 
 func (m *Mode) cmdToggleKana(_ context.Context, B *rl.Buffer) rl.Result {
 	m.enable(B, kanaTable[m.kana.switchTo])
+	if m.kana.switchTo == 1 {
+		m.message(B, msgHiragana)
+	} else {
+		m.message(B, msgKatakana)
+	}
 	return rl.CONTINUE
 }
 
@@ -348,9 +359,11 @@ func (M *Mode) cmdAbbrevMode(ctx context.Context, B *rl.Buffer) rl.Result {
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			rc := M.cmdStartHenkan(ctx, B)
 			M.enable(B, hiragana)
+			M.message(B, msgHiragana)
 			return rc
 		},
 	})
+	M.message(B, msgAbbrev)
 	return rl.CONTINUE
 }
 
@@ -411,6 +424,7 @@ func (M *Mode) restoreKeyMap(km canBindKey) {
 func (M *Mode) cmdLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	debug("cmdLatinMode")
 	M.restoreKeyMap(B)
+	M.message(B, msgLatin)
 	return rl.CONTINUE
 }
 
@@ -439,8 +453,10 @@ func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result 
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			M.restoreKeyMap(B)
 			M.enable(B, hiragana)
+			M.message(B, msgHiragana)
 			return rl.CONTINUE
 		},
 	})
+	M.message(B, msg0208)
 	return rl.CONTINUE
 }
