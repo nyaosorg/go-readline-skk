@@ -44,6 +44,13 @@ func (q *MiniBufferOnCurrentLine) Recurse(originalPrompt string) MiniBuffer {
 	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
 }
 
+func (M *Mode) message(B *readline.Buffer, text string) {
+	M.MiniBuffer.Enter(B.Out, text)
+	io.WriteString(B.Out, "\x1B[K")
+	M.MiniBuffer.Leave(B.Out)
+	B.RepaintAfterPrompt()
+}
+
 func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 	M.MiniBuffer.Enter(B.Out, prompt)
 	B.Out.Flush()
