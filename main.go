@@ -428,6 +428,22 @@ func (M *Mode) cmdLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
+func (M *Mode) cmdAcceptLineWithLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+	if M.saveMap != nil {
+		M.restoreKeyMap(B)
+		M.message(B, msgLatin)
+	}
+	return rl.ENTER
+}
+
+func (M *Mode) cmdIntrruptWithLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+	if M.saveMap != nil {
+		M.restoreKeyMap(B)
+		M.message(B, msgLatin)
+	}
+	return rl.INTR
+}
+
 func hanToZen(c rune) rune {
 	if c < ' ' || c >= '\x7f' {
 		return c

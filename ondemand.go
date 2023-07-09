@@ -72,6 +72,14 @@ func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Re
 	}
 	if succeeded {
 		readline.GlobalKeyMap.BindKey(o.Key, skkMode)
+		readline.GlobalKeyMap.BindKey(keys.Enter, &readline.GoCommand{
+			Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
+			Func: skkMode.cmdAcceptLineWithLatinMode,
+		})
+		readline.GlobalKeyMap.BindKey(keys.CtrlC, &readline.GoCommand{
+			Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
+			Func: skkMode.cmdIntrruptWithLatinMode,
+		})
 		return skkMode.Call(ctx, B)
 	}
 	return readline.CONTINUE
