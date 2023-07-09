@@ -17,6 +17,10 @@ type MiniBuffer interface {
 type MiniBufferOnNextLine struct{}
 
 func (MiniBufferOnNextLine) Enter(w io.Writer, prompt string) (int, error) {
+	// この prompt は MiniBufferOnNextLine → MiniBufferOnCurrentLine と呼び出してから戻る際、
+	// MiniBufferOnNextLine を再表示する際する時に使う。
+	// （ prompt を使わず、別途 io.WriteString(w,prompt) 的な処理を呼び出し元で
+	//    やってもらうと、その復元処理ができないかったりする )
 	return fmt.Fprintf(w, "\n%s ", prompt)
 }
 
