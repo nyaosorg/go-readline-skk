@@ -57,6 +57,19 @@ func loadWithConfigString(config string) (skkMode *Mode, errs []error) {
 	return skkMode, errs
 }
 
+func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *readline.Buffer) readline.Result {
+	readline.GlobalKeyMap.BindKey(key, M)
+	readline.GlobalKeyMap.BindKey(keys.Enter, &readline.GoCommand{
+		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
+		Func: M.cmdAcceptLineWithLatinMode,
+	})
+	readline.GlobalKeyMap.BindKey(keys.CtrlC, &readline.GoCommand{
+		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
+		Func: M.cmdIntrruptWithLatinMode,
+	})
+	return M.Call(ctx, B)
+}
+
 func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Result {
 	config, ok := o.Func()
 	if !ok {
@@ -69,20 +82,11 @@ func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Re
 			fmt.Fprintf(B.Out, "\n%s", e.Error())
 		}
 		B.RepaintAll()
+		readline.GlobalKeyMap.BindKey(o.Key, nil)
 		return readline.CONTINUE
 	}
 	o.closer = func() error { return skkMode.SaveUserJisyo() }
-	readline.GlobalKeyMap.BindKey(o.Key, skkMode)
-	readline.GlobalKeyMap.BindKey(keys.Enter, &readline.GoCommand{
-		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
-		Func: skkMode.cmdAcceptLineWithLatinMode,
-	})
-	readline.GlobalKeyMap.BindKey(keys.CtrlC, &readline.GoCommand{
-		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
-		Func: skkMode.cmdIntrruptWithLatinMode,
-	})
-	skkMode.Call(ctx, B)
-	return readline.CONTINUE
+	return skkMode.enableUntilExit(ctx, o.Key, B)
 }
 
 func SetupOnDemand(key keys.Code, f func() (string, bool)) func() error {
