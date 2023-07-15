@@ -38,11 +38,12 @@ func (trig *_Trigger) String() string {
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	User       Jisyo
-	System     Jisyo
-	MiniBuffer MiniBuffer
-	saveMap    []rl.Command
-	kana       *_Kana
+	User          Jisyo
+	System        Jisyo
+	MiniBuffer    MiniBuffer
+	saveMap       []rl.Command
+	kana          *_Kana
+	userJisyoPath string
 }
 
 var rxNumber = regexp.MustCompile(`[0-9]+`)

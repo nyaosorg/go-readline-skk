@@ -25,15 +25,16 @@ func New() *Mode {
 // Load loads dictionaries and returns new SKK instance.
 // A SKK instance is both a container for dictionaries and a command of readline.
 func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
-	jisyo := New()
+	M := New()
 	var err error
 	if userJisyoFname != "" {
-		jisyo.User.Load(userJisyoFname)
+		M.User.Load(userJisyoFname)
+		M.userJisyoPath = userJisyoFname
 	}
 	for _, fn := range systemJisyoFnames {
-		err = jisyo.System.Load(fn)
+		err = M.System.Load(fn)
 		if err == nil {
-			return jisyo, nil
+			return M, nil
 		}
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -76,8 +77,8 @@ func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
 // The file is first created with the name filename+".TMP",
 // and replaced with the file of filename after closing.
 // The original file is renamed to filename + ".BAK".
-func (M *Mode) SaveUserJisyo(filename string) error {
-	filename = expandEnv(filename)
+func (M *Mode) SaveUserJisyo() error {
+	filename := expandEnv(M.userJisyoPath)
 	tmpName := filename + ".TMP"
 	fd, err := os.Create(tmpName)
 	if err != nil {

@@ -27,9 +27,8 @@ func (o *onDemandLoad) String() string {
 	return "SKK_MODE_ONDEMAND_SETUP"
 }
 
-func loadWithConfigString(config string) (skkMode *Mode, closer func() error, errs []error) {
+func loadWithConfigString(config string) (skkMode *Mode, errs []error) {
 	skkMode = New()
-	closer = func() error { return nil }
 	for ok := true; ok; {
 		var token string
 		token, config, ok = strings.Cut(config, ";")
@@ -43,9 +42,7 @@ func loadWithConfigString(config string) (skkMode *Mode, closer func() error, er
 					err = nil
 				}
 				if err == nil {
-					closer = func() error {
-						return skkMode.SaveUserJisyo(value)
-					}
+					skkMode.userJisyoPath = value
 				}
 			} else {
 				err = fmt.Errorf("SKK-ERROR: unknown option: %s", key)
@@ -57,7 +54,7 @@ func loadWithConfigString(config string) (skkMode *Mode, closer func() error, er
 			errs = append(errs, err)
 		}
 	}
-	return skkMode, closer, errs
+	return skkMode, errs
 }
 
 func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Result {
@@ -66,7 +63,7 @@ func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Re
 		readline.GlobalKeyMap.BindKey(o.Key, nil)
 		return readline.CONTINUE
 	}
-	skkMode, closer, errs := loadWithConfigString(config)
+	skkMode, errs := loadWithConfigString(config)
 	if len(errs) > 0 {
 		for _, e := range errs {
 			fmt.Fprintf(B.Out, "\n%s", e.Error())
@@ -74,7 +71,7 @@ func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Re
 		B.RepaintAll()
 		return readline.CONTINUE
 	}
-	o.closer = closer
+	o.closer = func() error { return skkMode.SaveUserJisyo() }
 	readline.GlobalKeyMap.BindKey(o.Key, skkMode)
 	readline.GlobalKeyMap.BindKey(keys.Enter, &readline.GoCommand{
 		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
