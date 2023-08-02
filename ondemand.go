@@ -2,9 +2,6 @@ package skk
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
 
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
@@ -25,48 +22,6 @@ func (o *onDemandLoad) Close() error {
 
 func (o *onDemandLoad) String() string {
 	return "SKK_MODE_ONDEMAND_SETUP"
-}
-
-func (M *Mode) ConfigWithString(config string) (errs []error) {
-	for ok := true; ok; {
-		var token string
-		token, config, ok = strings.Cut(config, ";")
-
-		key, value, hasEqual := strings.Cut(token, "=")
-		var err error
-		if hasEqual {
-			if strings.EqualFold(key, "user") {
-				err = M.User.Load(value)
-				if os.IsNotExist(err) {
-					err = nil
-				}
-				if err == nil {
-					M.userJisyoPath = value
-				}
-			} else {
-				err = fmt.Errorf("SKK-ERROR: unknown option: %s", key)
-			}
-		} else {
-			err = M.System.Load(token)
-		}
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errs
-}
-
-func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *readline.Buffer) readline.Result {
-	readline.GlobalKeyMap.BindKey(key, M)
-	readline.GlobalKeyMap.BindKey(keys.Enter, &readline.GoCommand{
-		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
-		Func: M.cmdAcceptLineWithLatinMode,
-	})
-	readline.GlobalKeyMap.BindKey(keys.CtrlC, &readline.GoCommand{
-		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
-		Func: M.cmdIntrruptWithLatinMode,
-	})
-	return M.Call(ctx, B)
 }
 
 func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Result {
