@@ -14,8 +14,19 @@ import (
 )
 
 func mains() error {
-	closer := skk.SetupOnDemand(keys.CtrlJ, func() (string, bool) {
-		return os.LookupEnv("NYAGOSKK")
+	closer := skk.SetupOnDemand(keys.CtrlJ, func(skkMode *skk.Mode) bool {
+		config, ok := os.LookupEnv("NYAGOSKK")
+		if !ok {
+			return false
+		}
+		errs := skkMode.ConfigWithString(config)
+		if len(errs) > 0 {
+			for _, e := range errs {
+				fmt.Fprintf(os.Stdout, "\n%s", e.Error())
+			}
+			return false
+		}
+		return true
 	})
 	defer closer()
 

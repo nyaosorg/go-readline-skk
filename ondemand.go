@@ -12,7 +12,7 @@ import (
 
 type onDemandLoad struct {
 	Key    keys.Code
-	Func   func() (string, bool)
+	Func   func(*Mode) bool
 	closer func() error
 }
 
@@ -27,8 +27,7 @@ func (o *onDemandLoad) String() string {
 	return "SKK_MODE_ONDEMAND_SETUP"
 }
 
-func loadWithConfigString(config string) (skkMode *Mode, errs []error) {
-	skkMode = New()
+func (M *Mode) ConfigWithString(config string) (errs []error) {
 	for ok := true; ok; {
 		var token string
 		token, config, ok = strings.Cut(config, ";")
@@ -37,24 +36,24 @@ func loadWithConfigString(config string) (skkMode *Mode, errs []error) {
 		var err error
 		if hasEqual {
 			if strings.EqualFold(key, "user") {
-				err = skkMode.User.Load(value)
+				err = M.User.Load(value)
 				if os.IsNotExist(err) {
 					err = nil
 				}
 				if err == nil {
-					skkMode.userJisyoPath = value
+					M.userJisyoPath = value
 				}
 			} else {
 				err = fmt.Errorf("SKK-ERROR: unknown option: %s", key)
 			}
 		} else {
-			err = skkMode.System.Load(token)
+			err = M.System.Load(token)
 		}
 		if err != nil {
 			errs = append(errs, err)
 		}
 	}
-	return skkMode, errs
+	return errs
 }
 
 func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *readline.Buffer) readline.Result {
@@ -71,17 +70,9 @@ func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *readline.B
 }
 
 func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Result {
-	config, ok := o.Func()
+	skkMode := New()
+	ok := o.Func(skkMode)
 	if !ok {
-		readline.GlobalKeyMap.BindKey(o.Key, nil)
-		return readline.CONTINUE
-	}
-	skkMode, errs := loadWithConfigString(config)
-	if len(errs) > 0 {
-		for _, e := range errs {
-			fmt.Fprintf(B.Out, "\n%s", e.Error())
-		}
-		B.RepaintAll()
 		readline.GlobalKeyMap.BindKey(o.Key, nil)
 		return readline.CONTINUE
 	}
@@ -89,7 +80,7 @@ func (o *onDemandLoad) Call(ctx context.Context, B *readline.Buffer) readline.Re
 	return skkMode.enableUntilExit(ctx, o.Key, B)
 }
 
-func SetupOnDemand(key keys.Code, f func() (string, bool)) func() error {
+func SetupOnDemand(key keys.Code, f func(*Mode) bool) func() error {
 	o := &onDemandLoad{
 		Key:  key,
 		Func: f,
