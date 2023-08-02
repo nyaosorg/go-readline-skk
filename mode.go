@@ -55,16 +55,24 @@ func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return rl.CONTINUE
 }
 
-// Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.
+// Setup sets k in readline's global keymap to boot into SKK mode.
 // If you want to set the SKK for a specific readline keymap,
 // give the return value of the Load function as the second argument of BindKey
-func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
+func SetupTo(k keys.Code, userJisyoFname string, systemJisyoFnames ...string) error {
 	M, err := Load(userJisyoFname, systemJisyoFnames...)
 	if err != nil {
 		return err
 	}
-	rl.GlobalKeyMap.BindKey(keys.CtrlJ, M)
+	rl.GlobalKeyMap.BindKey(k, M)
 	return nil
+
+}
+
+// Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.
+// If you want to set the SKK for a specific readline keymap,
+// give the return value of the Load function as the second argument of BindKey
+func Setup(userJisyoFname string, systemJisyoFnames ...string) error {
+	return SetupTo(keys.CtrlJ, userJisyoFname, systemJisyoFnames...)
 }
 
 // WriteTo outputs the user dictionary to w.

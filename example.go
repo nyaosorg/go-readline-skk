@@ -10,11 +10,12 @@ import (
 
 	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/keys"
 )
 
 func mains() error {
 	// ~/ はパッケージ側で展開されます
-	if err := skk.Setup("~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
+	if err := skk.SetupTo(keys.CtrlJ, "~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
 		return err
 	}
 
