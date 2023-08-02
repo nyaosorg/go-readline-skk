@@ -15,7 +15,9 @@ import (
 
 func mains() error {
 	// ~/ はパッケージ側で展開されます
-	if err := skk.SetupTo(keys.CtrlJ, "~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
+	key := keys.CtrlJ
+	// key := keys.CtrlBackslash
+	if err := skk.SetupTo(key, "~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
 		return err
 	}
 

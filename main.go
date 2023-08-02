@@ -44,6 +44,7 @@ type Mode struct {
 	saveMap       []rl.Command
 	kana          *_Kana
 	userJisyoPath string
+	ctrlJ         keys.Code
 }
 
 var rxNumber = regexp.MustCompile(`[0-9]+`)
@@ -399,7 +400,7 @@ func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 	X.BindKey("l", &rl.GoCommand{Name: "SKK_LATIN_MODE", Func: mode.cmdLatinMode})
 	X.BindKey("L", &rl.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: mode.cmdJis0208LatinMode})
 	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CANCEL", Func: mode.cmdCancel})
-	X.BindKey(keys.CtrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: mode.cmdKakutei})
+	X.BindKey(mode.ctrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: mode.cmdKakutei})
 }
 
 func (M *Mode) backupKeyMap(km canLookup) {
@@ -465,7 +466,7 @@ func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result 
 				return rl.CONTINUE
 			}})
 	}
-	B.BindKey(keys.CtrlJ, &rl.GoCommand{
+	B.BindKey(M.ctrlJ, &rl.GoCommand{
 		Name: "SKK_JISX0208_LATIN_KAKUTEI",
 		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
 			M.restoreKeyMap(B)

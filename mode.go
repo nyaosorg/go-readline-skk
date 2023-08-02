@@ -21,6 +21,7 @@ func New() *Mode {
 		User:       Jisyo{},
 		System:     Jisyo{},
 		MiniBuffer: MiniBufferOnNextLine{},
+		ctrlJ:      keys.CtrlJ,
 	}
 }
 
@@ -65,6 +66,7 @@ func SetupTo(k keys.Code, userJisyoFname string, systemJisyoFnames ...string) er
 	if err != nil {
 		return err
 	}
+	M.ctrlJ = k
 	rl.GlobalKeyMap.BindKey(k, M)
 	return nil
 
