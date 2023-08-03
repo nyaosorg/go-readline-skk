@@ -38,8 +38,8 @@ func (trig *_Trigger) String() string {
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	User          Jisyo
-	System        Jisyo
+	User          *Jisyo
+	System        *Jisyo
 	MiniBuffer    MiniBuffer
 	saveMap       []rl.Command
 	kana          *_Kana
@@ -81,11 +81,11 @@ func hanToZenString(s string) string {
 }
 
 func (M *Mode) _lookup(source string) ([]string, bool) {
-	list, ok := M.User[source]
+	list, ok := M.User.lookup(source)
 	if ok {
 		return list, true
 	}
-	list, ok = M.System[source]
+	list, ok = M.System.lookup(source)
 	return list, ok
 }
 
@@ -148,7 +148,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 		}
 	}
 	// リストの先頭に挿入
-	M.User[source] = unshift(list, newWord)
+	M.User.data[source] = unshift(list, newWord)
 	return newWord, true
 }
 
@@ -250,13 +250,13 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 					// 本当はシステム辞書を参照しないようLisp構文を
 					// セットしなければいけないが、そこまではしない.
 					if len(list) <= 1 {
-						delete(M.User, source)
+						delete(M.User.data, source)
 					} else {
 						if current+1 < len(list) {
 							copy(list[current:], list[current+1:])
 						}
 						list = list[:len(list)-1]
-						M.User[source] = list
+						M.User.data[source] = list
 					}
 					B.ReplaceAndRepaint(markerPos, "")
 					return rl.CONTINUE

@@ -18,8 +18,8 @@ var ErrJisyoNotFound = errors.New("Jisyo not found")
 // New creats an instance with empty dictionaries.
 func New() *Mode {
 	return &Mode{
-		User:       Jisyo{},
-		System:     Jisyo{},
+		User:       &Jisyo{data: map[string][]string{}},
+		System:     &Jisyo{data: map[string][]string{}},
 		MiniBuffer: MiniBufferOnNextLine{},
 		ctrlJ:      keys.CtrlJ,
 	}

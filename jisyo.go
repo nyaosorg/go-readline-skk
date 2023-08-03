@@ -13,7 +13,14 @@ import (
 )
 
 // Jisyo is a dictionary that contains user or system dictionary.
-type Jisyo map[string][]string
+type Jisyo struct {
+	data map[string][]string
+}
+
+func (j *Jisyo) lookup(key string) ([]string, bool) {
+	candidates, ok := j.data[key]
+	return candidates, ok
+}
 
 var percentEnv = regexp.MustCompile(`%.*?%`)
 
@@ -33,7 +40,7 @@ func expandEnv(s string) string {
 }
 
 // Load reads the contents of an dictionary from a file as EUC-JP.
-func (j Jisyo) Load(filename string) error {
+func (j *Jisyo) Load(filename string) error {
 	fd, err := os.Open(expandEnv(filename))
 	if err != nil {
 		return err
@@ -43,12 +50,12 @@ func (j Jisyo) Load(filename string) error {
 }
 
 // Load reads the contents of an dictionary from io.Reader as EUC-JP
-func (j Jisyo) ReadEucJp(r io.Reader) error {
+func (j *Jisyo) ReadEucJp(r io.Reader) error {
 	decoder := japanese.EUCJP.NewDecoder()
 	return j.Read(decoder.Reader(r))
 }
 
-func (j Jisyo) readOne(line string) {
+func (j *Jisyo) readOne(line string) {
 	if len(line) <= 0 || line[0] == ';' {
 		return
 	}
@@ -56,7 +63,7 @@ func (j Jisyo) readOne(line string) {
 	if !ok {
 		return
 	}
-	values := j[source]
+	values := j.data[source]
 	for {
 		one, rest, ok := strings.Cut(lists, "/")
 		if one != "" {
@@ -67,7 +74,7 @@ func (j Jisyo) readOne(line string) {
 		}
 		lists = rest
 	}
-	j[source] = values
+	j.data[source] = values
 }
 
 func pragma(line string) map[string]string {
@@ -91,7 +98,7 @@ func pragma(line string) map[string]string {
 }
 
 // Load reads the contents of an dictionary from io.Reader as UTF8
-func (j Jisyo) Read(r io.Reader) error {
+func (j *Jisyo) Read(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Text()
@@ -100,7 +107,7 @@ func (j Jisyo) Read(r io.Reader) error {
 	return sc.Err()
 }
 
-func (j Jisyo) ReadWithPragma(r io.Reader) error {
+func (j *Jisyo) ReadWithPragma(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	decoder := japanese.EUCJP.NewDecoder()
 	f := func(s string) string {
@@ -164,12 +171,12 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 }
 
 // WriteTo outputs the contents of dictonary with UTF8
-func (j Jisyo) WriteTo(w io.Writer) (n int64, err error) {
+func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	var wc writeCounter
 	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
 		return wc.Result()
 	}
-	for key, list := range j {
+	for key, list := range j.data {
 		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
 			if wc.Try64(dumpPair(key, list, w)) {
 				return wc.Result()
@@ -179,7 +186,7 @@ func (j Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	if wc.Try(io.WriteString(w, "\n;; okuri-nasi entries.\n")) {
 		return wc.Result()
 	}
-	for key, list := range j {
+	for key, list := range j.data {
 		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
 			if wc.Try64(dumpPair(key, list, w)) {
 				return wc.Result()
@@ -190,7 +197,7 @@ func (j Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 // WriteTo outputs the contents of dictonary with EUC-JP
-func (j Jisyo) WriteToEucJp(w io.Writer) (n int64, err error) {
+func (j *Jisyo) WriteToEucJp(w io.Writer) (n int64, err error) {
 	encoder := japanese.EUCJP.NewEncoder()
 	return j.WriteTo(encoder.Writer(w))
 }
