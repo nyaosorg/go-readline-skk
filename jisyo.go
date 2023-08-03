@@ -7,19 +7,46 @@ import (
 	"os/user"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
 	"golang.org/x/text/encoding/japanese"
 )
 
 // Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo struct {
-	data map[string][]string
+	ari  map[string][]string
+	nasi map[string][]string
 }
 
-func (j *Jisyo) lookup(key string) ([]string, bool) {
-	candidates, ok := j.data[key]
-	return candidates, ok
+func newJisyo() *Jisyo {
+	return &Jisyo{
+		ari:  map[string][]string{},
+		nasi: map[string][]string{},
+	}
+}
+
+func (j *Jisyo) lookup(key string, okuri bool) (candidates []string, ok bool) {
+	if okuri {
+		candidates, ok = j.ari[key]
+	} else {
+		candidates, ok = j.nasi[key]
+	}
+	return
+}
+
+func (j *Jisyo) store(key string, okuri bool, value []string) {
+	if okuri {
+		j.ari[key] = value
+	} else {
+		j.nasi[key] = value
+	}
+}
+
+func (j *Jisyo) remove(key string, okuri bool) {
+	if okuri {
+		delete(j.ari, key)
+	} else {
+		delete(j.nasi, key)
+	}
 }
 
 var percentEnv = regexp.MustCompile(`%.*?%`)
@@ -55,15 +82,23 @@ func (j *Jisyo) ReadEucJp(r io.Reader) error {
 	return j.Read(decoder.Reader(r))
 }
 
-func (j *Jisyo) readOne(line string) {
+func (j *Jisyo) readOne(line string, okuri bool) bool {
+	if len(line) > 2 && line[0] == ';' && line[1] == ';' {
+		if strings.HasPrefix(line, ";; okuri-ari entries.") {
+			okuri = true
+		} else if strings.HasPrefix(line, ";; okuri-nasi entries.") {
+			okuri = false
+		}
+		return okuri
+	}
 	if len(line) <= 0 || line[0] == ';' {
-		return
+		return okuri
 	}
 	source, lists, ok := strings.Cut(line, " /")
 	if !ok {
-		return
+		return okuri
 	}
-	values := j.data[source]
+	values, _ := j.lookup(source, okuri)
 	for {
 		one, rest, ok := strings.Cut(lists, "/")
 		if one != "" {
@@ -74,7 +109,8 @@ func (j *Jisyo) readOne(line string) {
 		}
 		lists = rest
 	}
-	j.data[source] = values
+	j.store(source, okuri, values)
+	return okuri
 }
 
 func pragma(line string) map[string]string {
@@ -100,9 +136,10 @@ func pragma(line string) map[string]string {
 // Load reads the contents of an dictionary from io.Reader as UTF8
 func (j *Jisyo) Read(r io.Reader) error {
 	sc := bufio.NewScanner(r)
+	var okuri bool
 	for sc.Scan() {
 		line := sc.Text()
-		j.readOne(line)
+		okuri = j.readOne(line, okuri)
 	}
 	return sc.Err()
 }
@@ -116,6 +153,7 @@ func (j *Jisyo) ReadWithPragma(r io.Reader) error {
 		}
 		return s
 	}
+	var okuri bool
 	if sc.Scan() {
 		line := f(sc.Text())
 		if len(line) > 0 && line[0] == ';' {
@@ -125,12 +163,13 @@ func (j *Jisyo) ReadWithPragma(r io.Reader) error {
 				}
 			}
 		} else {
-			j.readOne(line)
+			okuri = j.readOne(line, okuri)
 		}
 	}
 
 	for sc.Scan() {
-		j.readOne(f(sc.Text()))
+		text := sc.Text()
+		okuri = j.readOne(f(text), okuri)
 	}
 	return sc.Err()
 }
@@ -176,21 +215,17 @@ func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
 		return wc.Result()
 	}
-	for key, list := range j.data {
-		if r, _ := utf8.DecodeLastRuneInString(key); 'a' <= r && r <= 'z' {
-			if wc.Try64(dumpPair(key, list, w)) {
-				return wc.Result()
-			}
+	for key, list := range j.ari {
+		if wc.Try64(dumpPair(key, list, w)) {
+			return wc.Result()
 		}
 	}
 	if wc.Try(io.WriteString(w, "\n;; okuri-nasi entries.\n")) {
 		return wc.Result()
 	}
-	for key, list := range j.data {
-		if r, _ := utf8.DecodeLastRuneInString(key); r < 'a' || 'z' < r {
-			if wc.Try64(dumpPair(key, list, w)) {
-				return wc.Result()
-			}
+	for key, list := range j.nasi {
+		if wc.Try64(dumpPair(key, list, w)) {
+			return wc.Result()
 		}
 	}
 	return wc.Result()

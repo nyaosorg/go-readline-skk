@@ -80,17 +80,17 @@ func hanToZenString(s string) string {
 	return buffer.String()
 }
 
-func (M *Mode) _lookup(source string) ([]string, bool) {
-	list, ok := M.User.lookup(source)
+func (M *Mode) _lookup(source string, okuri bool) ([]string, bool) {
+	list, ok := M.User.lookup(source, okuri)
 	if ok {
 		return list, true
 	}
-	list, ok = M.System.lookup(source)
+	list, ok = M.System.lookup(source, okuri)
 	return list, ok
 }
 
-func (M *Mode) lookup(source string) ([]string, bool) {
-	list, ok := M._lookup(source)
+func (M *Mode) lookup(source string, okuri bool) ([]string, bool) {
+	list, ok := M._lookup(source, okuri)
 	if ok {
 		return list, ok
 	}
@@ -100,7 +100,7 @@ func (M *Mode) lookup(source string) ([]string, bool) {
 	}
 	number := source[loc[0]:loc[1]]
 	source = source[:loc[0]] + "#" + source[loc[1]:]
-	list, ok = M._lookup(source)
+	list, ok = M._lookup(source, okuri)
 	if !ok {
 		return nil, false
 	}
@@ -133,13 +133,13 @@ func unshift[T any](list []T, value T) []T {
 	return list
 }
 
-func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (string, bool) {
+func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string, okuri bool) (string, bool) {
 	newWord, err := M.ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
 		return "", false
 	}
-	list, _ := M.lookup(source)
+	list, _ := M.lookup(source, okuri)
 
 	// 二重登録よけ
 	for _, candidate := range list {
@@ -148,17 +148,18 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string) (s
 		}
 	}
 	// リストの先頭に挿入
-	M.User.data[source] = unshift(list, newWord)
+	M.User.store(source, okuri, unshift(list, newWord))
 	return newWord, true
 }
 
 const listingStartIndex = 4
 
 func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
-	list, found := M.lookup(source)
+	okuri := postfix != ""
+	list, found := M.lookup(source, okuri)
 	if !found {
 		// 辞書登録モード
-		result, ok := M.newCandidate(ctx, B, source)
+		result, ok := M.newCandidate(ctx, B, source, okuri)
 		if ok {
 			// 新変換文字列を展開する
 			B.ReplaceAndRepaint(markerPos, result)
@@ -184,7 +185,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			current++
 			if current >= len(list) {
 				// 辞書登録モード
-				result, ok := M.newCandidate(ctx, B, source)
+				result, ok := M.newCandidate(ctx, B, source, okuri)
 				if ok {
 					// 新変換文字列を展開する
 					B.ReplaceAndRepaint(markerPos, result)
@@ -250,13 +251,13 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 					// 本当はシステム辞書を参照しないようLisp構文を
 					// セットしなければいけないが、そこまではしない.
 					if len(list) <= 1 {
-						delete(M.User.data, source)
+						M.User.remove(source, okuri)
 					} else {
 						if current+1 < len(list) {
 							copy(list[current:], list[current+1:])
 						}
 						list = list[:len(list)-1]
-						M.User.data[source] = list
+						M.User.store(source, okuri, list)
 					}
 					B.ReplaceAndRepaint(markerPos, "")
 					return rl.CONTINUE
