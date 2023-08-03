@@ -211,12 +211,25 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 					fmt.Fprintf(&buffer, "[残り %d]", len(list)-_current)
 					key, err := M.ask1(B, buffer.String())
 					if err == nil {
-						if index := strings.Index("asdfjkl:", key); index >= 0 {
+						if index := strings.Index("asdfjkl:", key); index >= 0 && current+index < len(list) {
 							candidate, _, _ = strings.Cut(list[current+index], ";")
 							B.ReplaceAndRepaint(markerPos, candidate)
 							return rl.CONTINUE
 						} else if key == " " {
 							current = _current
+							if current >= len(list) {
+								// 辞書登録モード
+								result, ok := M.newCandidate(ctx, B, source, okuri)
+								if ok {
+									// 新変換文字列を展開する
+									B.ReplaceAndRepaint(markerPos, result)
+									return rl.CONTINUE
+								} else {
+									// 変換前に一旦戻す
+									B.ReplaceAndRepaint(markerPos, markerWhite+source)
+									return rl.CONTINUE
+								}
+							}
 						} else if key == "x" {
 							current -= len("ASDFJKL:")
 							if current < listingStartIndex {
