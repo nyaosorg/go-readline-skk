@@ -3,10 +3,8 @@ package skk
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
@@ -98,35 +96,6 @@ func (M *Mode) SaveUserJisyo() error {
 		return err
 	}
 	return os.Rename(tmpName, filename)
-}
-
-func (M *Mode) ConfigWithString(config string) (errs []error) {
-	for ok := true; ok; {
-		var token string
-		token, config, ok = strings.Cut(config, ";")
-
-		key, value, hasEqual := strings.Cut(token, "=")
-		var err error
-		if hasEqual {
-			if strings.EqualFold(key, "user") {
-				err = M.User.Load(value)
-				if os.IsNotExist(err) {
-					err = nil
-				}
-				if err == nil {
-					M.userJisyoPath = value
-				}
-			} else {
-				err = fmt.Errorf("SKK-ERROR: unknown option: %s", key)
-			}
-		} else {
-			err = M.System.Load(token)
-		}
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return errs
 }
 
 func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *rl.Buffer) rl.Result {
