@@ -18,10 +18,11 @@ func mains() error {
 
 	// ~/ はパッケージ側で展開されます
 	skkMode, err := skk.Config{
-		UserJisyoPath:    "~/.go-skk-jisyo",
-		SystemJisyoPaths: []string{"SKK-JISYO.L", "SKK-JISYO.emoji"},
-		CtrlJ:            keys.CtrlJ,
-		BindTo:           &ed,
+		UserJisyoPath:     "~/.go-skk-jisyo",
+		SystemJisyoPaths:  []string{"SKK-JISYO.L", "SKK-JISYO.emoji"},
+		CtrlJ:             keys.CtrlJ,
+		DontDisableOnExit: false,
+		BindTo:            &ed,
 		// BindTo:           readline.GlobalKeyMap,
 	}.Setup()
 
@@ -30,12 +31,13 @@ func mains() error {
 	}
 	defer skkMode.SaveUserJisyo()
 
-	text, err := ed.ReadLine(context.Background())
-	if err != nil {
-		return err
+	for {
+		text, err := ed.ReadLine(context.Background())
+		if err != nil {
+			return err
+		}
+		fmt.Println("TEXT:", text)
 	}
-	fmt.Println("TEXT:", text)
-
 	return nil
 }
 

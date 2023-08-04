@@ -24,10 +24,11 @@ func New() *Mode {
 }
 
 type Config struct {
-	UserJisyoPath    string
-	SystemJisyoPaths []string
-	CtrlJ            keys.Code
-	BindTo           canBindKey
+	UserJisyoPath     string
+	SystemJisyoPaths  []string
+	CtrlJ             keys.Code
+	BindTo            canBindKey
+	DontDisableOnExit bool
 }
 
 func (c Config) Setup() (skkMode *Mode, err error) {
@@ -49,7 +50,14 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		}
 	}
 	if c.BindTo != nil {
-		c.BindTo.BindKey(c.CtrlJ, skkMode)
+		if c.DontDisableOnExit {
+			c.BindTo.BindKey(c.CtrlJ, skkMode)
+		} else {
+			c.BindTo.BindKey(c.CtrlJ, &rl.GoCommand{
+				Name: "SKK_ENABLE_UNTIL_EXIT",
+				Func: skkMode.enableUntilExit,
+			})
+		}
 	}
 	return skkMode, nil
 }
@@ -98,13 +106,13 @@ func (M *Mode) SaveUserJisyo() error {
 	return os.Rename(tmpName, filename)
 }
 
-func (M *Mode) enableUntilExit(ctx context.Context, key keys.Code, B *rl.Buffer) rl.Result {
-	rl.GlobalKeyMap.BindKey(key, M)
-	rl.GlobalKeyMap.BindKey(keys.Enter, &rl.GoCommand{
+func (M *Mode) enableUntilExit(ctx context.Context, B *rl.Buffer) rl.Result {
+	B.BindKey(M.ctrlJ, M)
+	B.BindKey(keys.Enter, &rl.GoCommand{
 		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
 		Func: M.cmdAcceptLineWithLatinMode,
 	})
-	rl.GlobalKeyMap.BindKey(keys.CtrlC, &rl.GoCommand{
+	B.BindKey(keys.CtrlC, &rl.GoCommand{
 		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
 		Func: M.cmdIntrruptWithLatinMode,
 	})
