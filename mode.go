@@ -25,6 +25,37 @@ func New() *Mode {
 	}
 }
 
+type Config struct {
+	UserJisyoPath    string
+	SystemJisyoPaths []string
+	CtrlJ            keys.Code
+	BindTo           canBindKey
+}
+
+func (c Config) Setup() (skkMode *Mode, err error) {
+	skkMode = New()
+	if c.CtrlJ != "" {
+		skkMode.ctrlJ = c.CtrlJ
+	}
+	if c.UserJisyoPath != "" {
+		err := skkMode.User.Load(c.UserJisyoPath)
+		if err != nil {
+			return nil, err
+		}
+		skkMode.userJisyoPath = c.UserJisyoPath
+	}
+	for _, fn := range c.SystemJisyoPaths {
+		err = skkMode.System.Load(fn)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if c.BindTo != nil {
+		c.BindTo.BindKey(c.CtrlJ, skkMode)
+	}
+	return skkMode, nil
+}
+
 // Load loads dictionaries and returns new SKK instance.
 // A SKK instance is both a container for dictionaries and a command of readline.
 func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {

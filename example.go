@@ -14,16 +14,22 @@ import (
 )
 
 func mains() error {
-	// ~/ はパッケージ側で展開されます
-	key := keys.CtrlJ
-	// key := keys.CtrlBackslash
-	if closer, err := skk.SetupTo(key, "~/.go-skk-jisyo", "SKK-JISYO.L"); err != nil {
-		return err
-	} else {
-		defer closer()
-	}
-
 	var ed readline.Editor
+
+	// ~/ はパッケージ側で展開されます
+	skkMode, err := skk.Config{
+		UserJisyoPath:    "~/.go-skk-jisyo",
+		SystemJisyoPaths: []string{"SKK-JISYO.L", "SKK-JISYO.emoji"},
+		CtrlJ:            keys.CtrlJ,
+		BindTo:           &ed,
+		// BindTo:           readline.GlobalKeyMap,
+	}.Setup()
+
+	if err != nil {
+		return err
+	}
+	defer skkMode.SaveUserJisyo()
+
 	text, err := ed.ReadLine(context.Background())
 	if err != nil {
 		return err
