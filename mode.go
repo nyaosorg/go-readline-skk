@@ -50,12 +50,15 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		}
 	}
 	if c.BindTo != nil {
-		if c.DontDisableOnExit {
-			c.BindTo.BindKey(c.CtrlJ, skkMode)
-		} else {
-			c.BindTo.BindKey(c.CtrlJ, &rl.GoCommand{
-				Name: "SKK_ENABLE_UNTIL_EXIT",
-				Func: skkMode.enableUntilExit,
+		c.BindTo.BindKey(c.CtrlJ, skkMode)
+		if !c.DontDisableOnExit {
+			c.BindTo.BindKey(keys.Enter, &rl.GoCommand{
+				Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
+				Func: skkMode.cmdAcceptLineWithLatinMode,
+			})
+			c.BindTo.BindKey(keys.CtrlC, &rl.GoCommand{
+				Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
+				Func: skkMode.cmdIntrruptWithLatinMode,
 			})
 		}
 	}
@@ -104,17 +107,4 @@ func (M *Mode) SaveUserJisyo() error {
 		return err
 	}
 	return os.Rename(tmpName, filename)
-}
-
-func (M *Mode) enableUntilExit(ctx context.Context, B *rl.Buffer) rl.Result {
-	B.BindKey(M.ctrlJ, M)
-	B.BindKey(keys.Enter, &rl.GoCommand{
-		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
-		Func: M.cmdAcceptLineWithLatinMode,
-	})
-	B.BindKey(keys.CtrlC, &rl.GoCommand{
-		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
-		Func: M.cmdIntrruptWithLatinMode,
-	})
-	return M.Call(ctx, B)
 }
