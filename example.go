@@ -17,7 +17,7 @@ func mains() error {
 	// ~/ はパッケージ側で展開されます
 	key := keys.CtrlJ
 	// key := keys.CtrlBackslash
-	if closer, err := skk.SetupTo(key, "~/.skk-jisyo-nyagos", "SKK-JISYO.L"); err != nil {
+	if closer, err := skk.SetupTo(key, "~/.go-skk-jisyo", "SKK-JISYO.L"); err != nil {
 		return err
 	} else {
 		defer closer()

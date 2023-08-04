@@ -14,7 +14,7 @@ import (
 )
 
 func mains() error {
-	skkMode, err := skk.Load("~/.skk-jisyo-nyagos", "SKK-JISYO.L")
+	skkMode, err := skk.Load("~/.go-skk-jisyo", "SKK-JISYO.L")
 	if err != nil {
 		return err
 	}
