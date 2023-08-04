@@ -56,27 +56,6 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 	return skkMode, nil
 }
 
-// Load loads dictionaries and returns new SKK instance.
-// A SKK instance is both a container for dictionaries and a command of readline.
-func Load(userJisyoFname string, systemJisyoFnames ...string) (*Mode, error) {
-	M := New()
-	var err error
-	if userJisyoFname != "" {
-		M.User.Load(userJisyoFname)
-		M.userJisyoPath = userJisyoFname
-	}
-	for _, fn := range systemJisyoFnames {
-		err = M.System.Load(fn)
-		if err == nil {
-			return M, nil
-		}
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-	}
-	return nil, ErrJisyoNotFound
-}
-
 // String returns the name as the command starting SKK
 func (M *Mode) String() string {
 	return "SKK_MODE"
@@ -87,26 +66,6 @@ func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	M.enable(B, hiragana)
 	M.message(B, msgHiragana)
 	return rl.CONTINUE
-}
-
-// Setup sets k in readline's global keymap to boot into SKK mode.
-// If you want to set the SKK for a specific readline keymap,
-// give the return value of the Load function as the second argument of BindKey
-func SetupTo(k keys.Code, userJisyoFname string, systemJisyoFnames ...string) (func() error, error) {
-	M, err := Load(userJisyoFname, systemJisyoFnames...)
-	if err != nil {
-		return func() error { return nil }, err
-	}
-	M.ctrlJ = k
-	rl.GlobalKeyMap.BindKey(k, M)
-	return M.SaveUserJisyo, nil
-}
-
-// Setup sets Ctrl-J in readline's global keymap to boot into SKK mode.
-// If you want to set the SKK for a specific readline keymap,
-// give the return value of the Load function as the second argument of BindKey
-func Setup(userJisyoFname string, systemJisyoFnames ...string) (func() error, error) {
-	return SetupTo(keys.CtrlJ, userJisyoFname, systemJisyoFnames...)
 }
 
 // WriteTo outputs the user dictionary to w.
