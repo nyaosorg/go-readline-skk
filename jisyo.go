@@ -2,6 +2,7 @@ package skk
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/user"
@@ -9,6 +10,11 @@ import (
 	"strings"
 
 	"golang.org/x/text/encoding/japanese"
+)
+
+const (
+	ariHeader  = ";; okuri-ari entries."
+	nasiHeader = ";; okuri-nasi entries."
 )
 
 // Jisyo is a dictionary that contains user or system dictionary.
@@ -84,9 +90,9 @@ func (j *Jisyo) ReadEucJp(r io.Reader) error {
 
 func (j *Jisyo) readOne(line string, okuri bool) bool {
 	if len(line) > 2 && line[0] == ';' && line[1] == ';' {
-		if strings.HasPrefix(line, ";; okuri-ari entries.") {
+		if strings.HasPrefix(line, ariHeader) {
 			okuri = true
-		} else if strings.HasPrefix(line, ";; okuri-nasi entries.") {
+		} else if strings.HasPrefix(line, nasiHeader) {
 			okuri = false
 		}
 		return okuri
@@ -212,7 +218,7 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 // WriteTo outputs the contents of dictonary with UTF8
 func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 	var wc writeCounter
-	if wc.Try(io.WriteString(w, ";; okuri-ari entries.\n")) {
+	if wc.Try(fmt.Fprintln(w, ariHeader)) {
 		return wc.Result()
 	}
 	for key, list := range j.ari {
@@ -220,7 +226,7 @@ func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 			return wc.Result()
 		}
 	}
-	if wc.Try(io.WriteString(w, "\n;; okuri-nasi entries.\n")) {
+	if wc.Try(fmt.Fprintf(w, "\n%s\n", nasiHeader)) {
 		return wc.Result()
 	}
 	for key, list := range j.nasi {
