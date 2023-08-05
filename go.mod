@@ -1,4 +1,4 @@
-module github.com/hymkor/go-readline-skk
+module github.com/nyaosorg/go-readline-skk
 
 go 1.20
 
