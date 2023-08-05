@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hymkor/go-readline-skk"
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"github.com/nyaosorg/go-readline-skk"
 )
 
 func mains() error {
