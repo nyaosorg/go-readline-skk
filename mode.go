@@ -24,11 +24,11 @@ func New() *Mode {
 }
 
 type Config struct {
-	UserJisyoPath     string
-	SystemJisyoPaths  []string
-	CtrlJ             keys.Code
-	BindTo            canBindKey
-	DontDisableOnExit bool
+	UserJisyoPath    string
+	SystemJisyoPaths []string
+	CtrlJ            keys.Code
+	BindTo           canBindKey
+	KeepModeOnExit   bool
 }
 
 func (c Config) Setup() (skkMode *Mode, err error) {
@@ -51,7 +51,7 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 	}
 	if c.BindTo != nil {
 		c.BindTo.BindKey(c.CtrlJ, skkMode)
-		if !c.DontDisableOnExit {
+		if !c.KeepModeOnExit {
 			c.BindTo.BindKey(keys.Enter, &rl.GoCommand{
 				Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
 				Func: skkMode.cmdAcceptLineWithLatinMode,

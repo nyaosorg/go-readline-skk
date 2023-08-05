@@ -18,11 +18,11 @@ func mains() error {
 
 	// ~/ はパッケージ側で展開されます
 	skkMode, err := skk.Config{
-		UserJisyoPath:     "~/.go-skk-jisyo",
-		SystemJisyoPaths:  []string{"SKK-JISYO.L", "SKK-JISYO.emoji"},
-		CtrlJ:             keys.CtrlJ,
-		DontDisableOnExit: false,
-		BindTo:            &ed,
+		UserJisyoPath:    "~/.go-skk-jisyo",
+		SystemJisyoPaths: []string{"SKK-JISYO.L", "SKK-JISYO.emoji"},
+		CtrlJ:            keys.CtrlJ,
+		KeepModeOnExit:   false,
+		BindTo:           &ed,
 		// BindTo:           readline.GlobalKeyMap,
 	}.Setup()
 
