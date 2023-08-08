@@ -23,7 +23,6 @@ func mains() error {
 		CtrlJ:            keys.CtrlJ,
 		KeepModeOnExit:   false,
 		BindTo:           &ed,
-		// BindTo:           readline.GlobalKeyMap,
 	}.Setup()
 
 	if err != nil {
