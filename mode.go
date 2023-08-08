@@ -13,16 +13,6 @@ import (
 // ErrJisyoNotFound is an error that means dictionary file not found
 var ErrJisyoNotFound = errors.New("Jisyo not found")
 
-// New creats an instance with empty dictionaries.
-func New() *Mode {
-	return &Mode{
-		User:       newJisyo(),
-		System:     newJisyo(),
-		MiniBuffer: MiniBufferOnNextLine{},
-		ctrlJ:      keys.CtrlJ,
-	}
-}
-
 type Config struct {
 	UserJisyoPath    string
 	SystemJisyoPaths []string
@@ -32,9 +22,16 @@ type Config struct {
 }
 
 func (c Config) Setup() (skkMode *Mode, err error) {
-	skkMode = New()
+	skkMode = &Mode{
+		User:       newJisyo(),
+		System:     newJisyo(),
+		MiniBuffer: MiniBufferOnNextLine{},
+	}
+
 	if c.CtrlJ != "" {
 		skkMode.ctrlJ = c.CtrlJ
+	} else {
+		skkMode.ctrlJ = keys.CtrlJ
 	}
 	if c.UserJisyoPath != "" {
 		err := skkMode.User.Load(c.UserJisyoPath)
