@@ -240,5 +240,11 @@ func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 // WriteTo outputs the contents of dictonary with EUC-JP
 func (j *Jisyo) WriteToEucJp(w io.Writer) (n int64, err error) {
 	encoder := japanese.EUCJP.NewEncoder()
+	fmt.Fprintln(w, ";; -*- mode: fundamental; coding: euc-jp -*-")
 	return j.WriteTo(encoder.Writer(w))
+}
+
+func (j *Jisyo) WriteToUtf8(w io.Writer) (n int64, err error) {
+	fmt.Fprintln(w, ";; -*- mode: fundamental; coding: utf-8 -*-")
+	return j.WriteTo(w)
 }

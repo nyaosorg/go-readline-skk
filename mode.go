@@ -95,13 +95,17 @@ func (M *Mode) SaveUserJisyo() error {
 	if err != nil {
 		return err
 	}
-	if _, err := M.User.WriteToEucJp(fd); err != nil {
+	if _, err := M.User.WriteToUtf8(fd); err != nil {
 		return err
 	}
 	if err := fd.Close(); err != nil {
 		return err
 	}
-	if err := os.Rename(filename, filename+".BAK"); err != nil && !os.IsNotExist(err) {
+	backup := filename + ".BAK"
+	if err := os.Remove(backup); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := os.Rename(filename, backup); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return os.Rename(tmpName, filename)
