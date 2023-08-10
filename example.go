@@ -28,7 +28,12 @@ func mains() error {
 	if err != nil {
 		return err
 	}
-	defer skkMode.SaveUserJisyo()
+	defer func() {
+		err := skkMode.SaveUserJisyo()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
+	}()
 
 	for {
 		text, err := ed.ReadLine(context.Background())
