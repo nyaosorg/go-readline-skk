@@ -154,6 +154,12 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string, ok
 
 const listingStartIndex = 4
 
+func makeTop(list []string, current int) {
+	newTop := list[current]
+	copy(list[1:current+1], list[:current])
+	list[0] = newTop
+}
+
 func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
 	okuri := postfix != ""
 	list, found := M.lookup(source, okuri)
@@ -180,6 +186,10 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			return rl.CONTINUE
 		} else if input < " " {
 			removeOne(B, markerPos)
+			if current > 0 {
+				makeTop(list, current)
+				M.User.store(source, okuri, list)
+			}
 			return rl.CONTINUE
 		} else if input == " " {
 			current++
@@ -278,6 +288,10 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			}
 		} else {
 			removeOne(B, markerPos)
+			if current > 0 {
+				makeTop(list, current)
+				M.User.store(source, okuri, list)
+			}
 			return eval(ctx, B, input)
 		}
 	}
