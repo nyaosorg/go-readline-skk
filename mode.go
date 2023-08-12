@@ -84,7 +84,7 @@ func (M *Mode) SaveUserJisyo() error {
 	if err != nil {
 		return err
 	}
-	if _, err := M.User.WriteToUtf8(fd); err != nil {
+	if _, err := M.User.writeToUtf8(fd); err != nil {
 		return err
 	}
 	if err := fd.Close(); err != nil {

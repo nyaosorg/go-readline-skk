@@ -199,7 +199,7 @@ func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
 }
 
 // WriteTo outputs the contents of dictonary with UTF8
-func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
+func (j *Jisyo) writeTo(w io.Writer) (n int64, err error) {
 	var wc writeCounter
 	if wc.Try(fmt.Fprintln(w, ariHeader)) {
 		return wc.Result()
@@ -221,13 +221,13 @@ func (j *Jisyo) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 // WriteTo outputs the contents of dictonary with EUC-JP
-func (j *Jisyo) WriteToEucJp(w io.Writer) (n int64, err error) {
+func (j *Jisyo) writeToEucJp(w io.Writer) (n int64, err error) {
 	encoder := japanese.EUCJP.NewEncoder()
 	fmt.Fprintln(w, ";; -*- mode: fundamental; coding: euc-jp -*-")
-	return j.WriteTo(encoder.Writer(w))
+	return j.writeTo(encoder.Writer(w))
 }
 
-func (j *Jisyo) WriteToUtf8(w io.Writer) (n int64, err error) {
+func (j *Jisyo) writeToUtf8(w io.Writer) (n int64, err error) {
 	fmt.Fprintln(w, ";; -*- mode: fundamental; coding: utf-8 -*-")
-	return j.WriteTo(w)
+	return j.writeTo(w)
 }
