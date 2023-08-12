@@ -72,7 +72,7 @@ func expandEnv(s string) string {
 	})
 }
 
-// Load reads the contents of an dictionary from a file as EUC-JP.
+// Load reads the contents of an dictionary from a file.
 func (j *Jisyo) Load(filename string) error {
 	fd, err := os.Open(expandEnv(filename))
 	if err != nil {
