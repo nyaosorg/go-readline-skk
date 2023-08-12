@@ -2,16 +2,12 @@ package skk
 
 import (
 	"context"
-	"errors"
 	"io"
 	"os"
 
 	rl "github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 )
-
-// ErrJisyoNotFound is an error that means dictionary file not found
-var ErrJisyoNotFound = errors.New("Jisyo not found")
 
 type Config struct {
 	UserJisyoPath    string
