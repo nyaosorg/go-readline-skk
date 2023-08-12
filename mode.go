@@ -2,7 +2,6 @@ package skk
 
 import (
 	"context"
-	"io"
 	"os"
 
 	rl "github.com/nyaosorg/go-readline-ny"
@@ -69,12 +68,6 @@ func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	M.enable(B, hiragana)
 	M.message(B, msgHiragana)
 	return rl.CONTINUE
-}
-
-// WriteTo outputs the user dictionary to w.
-// Please note that the character code is UTF8.
-func (M *Mode) WriteTo(w io.Writer) (n int64, err error) {
-	return M.User.WriteTo(w)
 }
 
 // SaveUserJisyo saves the user dictionary as filename.
