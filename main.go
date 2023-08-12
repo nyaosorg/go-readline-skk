@@ -184,6 +184,9 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 			B.ReplaceAndRepaint(markerPos, markerWhite+source)
 			return readline.CONTINUE
 		} else if input < " " {
+			if len(postfix) > 0 && postfix[0] == '*' {
+				removeOne(B, B.Cursor-len(postfix))
+			}
 			removeOne(B, markerPos)
 			if current > 0 {
 				moveTop(list, current)
@@ -286,6 +289,9 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 				}
 			}
 		} else {
+			if len(postfix) > 0 && postfix[0] == '*' {
+				removeOne(B, B.Cursor-len(postfix))
+			}
 			removeOne(B, markerPos)
 			if current > 0 {
 				moveTop(list, current)
@@ -307,7 +313,7 @@ func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Res
 		if index := strings.IndexByte("aiueo", trig.Key); index >= 0 {
 			postfix = trig.M.kana.table[string(trig.Key)]
 		} else {
-			postfix = string(trig.Key)
+			postfix = "*" + string(trig.Key)
 		}
 		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
 	}
