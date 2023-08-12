@@ -12,7 +12,7 @@ type Config struct {
 	UserJisyoPath    string
 	SystemJisyoPaths []string
 	CtrlJ            keys.Code
-	BindTo           canBindKey
+	BindTo           CanBindKey
 	KeepModeOnExit   bool
 }
 

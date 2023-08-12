@@ -400,13 +400,13 @@ type canLookup interface {
 	Lookup(keys.Code) (readline.Command, bool)
 }
 
-type canBindKey interface {
+type CanBindKey interface {
 	BindKey(keys.Code, readline.Command)
 }
 
 type canKeyMap interface {
 	canLookup
-	canBindKey
+	CanBindKey
 }
 
 func (mode *Mode) enable(X canKeyMap, K *_Kana) {
@@ -443,7 +443,7 @@ func (M *Mode) backupKeyMap(km canLookup) {
 	}
 }
 
-func (M *Mode) restoreKeyMap(km canBindKey) {
+func (M *Mode) restoreKeyMap(km CanBindKey) {
 	debug("restoreKeyMap")
 	for i, command := range M.saveMap {
 		km.BindKey(keys.Code(string(rune(i))), command)
