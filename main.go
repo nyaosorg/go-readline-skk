@@ -154,7 +154,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string, ok
 
 const listingStartIndex = 4
 
-func makeTop(list []string, current int) {
+func moveTop(list []string, current int) {
 	newTop := list[current]
 	copy(list[1:current+1], list[:current])
 	list[0] = newTop
@@ -187,7 +187,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 		} else if input < " " {
 			removeOne(B, markerPos)
 			if current > 0 {
-				makeTop(list, current)
+				moveTop(list, current)
 				M.User.store(source, okuri, list)
 			}
 			return rl.CONTINUE
@@ -289,7 +289,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 		} else {
 			removeOne(B, markerPos)
 			if current > 0 {
-				makeTop(list, current)
+				moveTop(list, current)
 				M.User.store(source, okuri, list)
 			}
 			return eval(ctx, B, input)
