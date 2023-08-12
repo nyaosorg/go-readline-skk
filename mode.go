@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	rl "github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 )
 
@@ -42,15 +42,15 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		}
 	}
 	if c.BindTo == nil {
-		c.BindTo = rl.GlobalKeyMap
+		c.BindTo = readline.GlobalKeyMap
 	}
 	c.BindTo.BindKey(c.CtrlJ, skkMode)
 	if !c.KeepModeOnExit {
-		c.BindTo.BindKey(keys.Enter, &rl.GoCommand{
+		c.BindTo.BindKey(keys.Enter, &readline.GoCommand{
 			Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
 			Func: skkMode.cmdAcceptLineWithLatinMode,
 		})
-		c.BindTo.BindKey(keys.CtrlC, &rl.GoCommand{
+		c.BindTo.BindKey(keys.CtrlC, &readline.GoCommand{
 			Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
 			Func: skkMode.cmdIntrruptWithLatinMode,
 		})
@@ -64,10 +64,10 @@ func (M *Mode) String() string {
 }
 
 // Call is readline.Command to start SKK henkan mode.
-func (M *Mode) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) Call(ctx context.Context, B *readline.Buffer) readline.Result {
 	M.enable(B, hiragana)
 	M.message(B, msgHiragana)
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
 // SaveUserJisyo saves the user dictionary as filename.

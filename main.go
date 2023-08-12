@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	rl "github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	// "github.com/nyaosorg/go-windows-dbg"
 )
@@ -41,7 +41,7 @@ type Mode struct {
 	User          *Jisyo
 	System        *Jisyo
 	MiniBuffer    MiniBuffer
-	saveMap       []rl.Command
+	saveMap       []readline.Command
 	kana          *_Kana
 	userJisyoPath string
 	ctrlJ         keys.Code
@@ -132,7 +132,7 @@ func unshift(list []string, value string) []string {
 	return list
 }
 
-func (M *Mode) newCandidate(ctx context.Context, B *rl.Buffer, source string, okuri bool) (string, bool) {
+func (M *Mode) newCandidate(ctx context.Context, B *readline.Buffer, source string, okuri bool) (string, bool) {
 	newWord, err := M.ask(ctx, B, source, true)
 	B.RepaintAfterPrompt()
 	if err != nil || len(newWord) <= 0 {
@@ -159,7 +159,7 @@ func moveTop(list []string, current int) {
 	list[0] = newTop
 }
 
-func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, source string, postfix string) rl.Result {
+func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int, source string, postfix string) readline.Result {
 	okuri := postfix != ""
 	list, found := M.lookup(source, okuri)
 	if !found {
@@ -168,11 +168,11 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 		if ok {
 			// 新変換文字列を展開する
 			B.ReplaceAndRepaint(markerPos, result)
-			return rl.CONTINUE
+			return readline.CONTINUE
 		} else {
 			// 変換前に一旦戻す
 			B.ReplaceAndRepaint(markerPos, markerWhite+source)
-			return rl.CONTINUE
+			return readline.CONTINUE
 		}
 	}
 	current := 0
@@ -182,14 +182,14 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 		input, _ := B.GetKey()
 		if input == string(keys.CtrlG) {
 			B.ReplaceAndRepaint(markerPos, markerWhite+source)
-			return rl.CONTINUE
+			return readline.CONTINUE
 		} else if input < " " {
 			removeOne(B, markerPos)
 			if current > 0 {
 				moveTop(list, current)
 				M.User.store(source, okuri, list)
 			}
-			return rl.CONTINUE
+			return readline.CONTINUE
 		} else if input == " " {
 			current++
 			if current >= len(list) {
@@ -198,11 +198,11 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 				if ok {
 					// 新変換文字列を展開する
 					B.ReplaceAndRepaint(markerPos, result)
-					return rl.CONTINUE
+					return readline.CONTINUE
 				} else {
 					// 変換前に一旦戻す
 					B.ReplaceAndRepaint(markerPos, markerWhite+source)
-					return rl.CONTINUE
+					return readline.CONTINUE
 				}
 			}
 			if current >= listingStartIndex {
@@ -223,7 +223,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 						if index := strings.Index("asdfjkl:", key); index >= 0 && current+index < len(list) {
 							candidate, _, _ = strings.Cut(list[current+index], ";")
 							B.ReplaceAndRepaint(markerPos, candidate)
-							return rl.CONTINUE
+							return readline.CONTINUE
 						} else if key == " " {
 							current = _current
 							if current >= len(list) {
@@ -232,11 +232,11 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 								if ok {
 									// 新変換文字列を展開する
 									B.ReplaceAndRepaint(markerPos, result)
-									return rl.CONTINUE
+									return readline.CONTINUE
 								} else {
 									// 変換前に一旦戻す
 									B.ReplaceAndRepaint(markerPos, markerWhite+source)
-									return rl.CONTINUE
+									return readline.CONTINUE
 								}
 							}
 						} else if key == "x" {
@@ -249,7 +249,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 							}
 						} else if key == string(keys.CtrlG) {
 							B.ReplaceAndRepaint(markerPos, markerWhite+source)
-							return rl.CONTINUE
+							return readline.CONTINUE
 						}
 					}
 				}
@@ -261,7 +261,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 			current--
 			if current < 0 {
 				B.ReplaceAndRepaint(markerPos, markerWhite+source)
-				return rl.CONTINUE
+				return readline.CONTINUE
 			}
 			candidate, _, _ = strings.Cut(list[current], ";")
 			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
@@ -282,7 +282,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 						M.User.store(source, okuri, list)
 					}
 					B.ReplaceAndRepaint(markerPos, "")
-					return rl.CONTINUE
+					return readline.CONTINUE
 				}
 			}
 		} else {
@@ -296,7 +296,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *rl.Buffer, markerPos int, sour
 	}
 }
 
-func (trig *_Trigger) Call(ctx context.Context, B *rl.Buffer) rl.Result {
+func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Result {
 	if markerPos := seekMarker(B); markerPos >= 0 {
 		// 送り仮名つき変換
 		var source strings.Builder
@@ -316,7 +316,7 @@ func (trig *_Trigger) Call(ctx context.Context, B *rl.Buffer) rl.Result {
 	return r.Call(ctx, B)
 }
 
-func seekMarker(B *rl.Buffer) int {
+func seekMarker(B *readline.Buffer) int {
 	for i := B.Cursor - 1; i >= 0; i-- {
 		ch := B.Buffer[i].String()
 		if ch == markerWhite || ch == markerBlack {
@@ -326,66 +326,66 @@ func seekMarker(B *rl.Buffer) int {
 	return -1
 }
 
-func removeOne(B *rl.Buffer, pos int) {
+func removeOne(B *readline.Buffer, pos int) {
 	copy(B.Buffer[pos:], B.Buffer[pos+1:])
 	B.Buffer = B.Buffer[:len(B.Buffer)-1]
 	B.Cursor--
 	B.RepaintAfterPrompt()
 }
 
-func (M *Mode) cmdStartHenkan(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdStartHenkan(ctx context.Context, B *readline.Buffer) readline.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
 		B.InsertAndRepaint(" ")
-		return rl.CONTINUE
+		return readline.CONTINUE
 	}
 	source := B.SubString(markerPos+1, B.Cursor)
 
 	return M.henkanMode(ctx, B, markerPos, source, "")
 }
 
-func eval(ctx context.Context, B *rl.Buffer, input string) rl.Result {
+func eval(ctx context.Context, B *readline.Buffer, input string) readline.Result {
 	return B.LookupCommand(input).Call(ctx, B)
 }
 
-func (M *Mode) cmdKakutei(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdKakutei(ctx context.Context, B *readline.Buffer) readline.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
 		return M.cmdLatinMode(ctx, B)
 	}
 	// kakutei
 	removeOne(B, markerPos)
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
-func (M *Mode) cmdCancel(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdCancel(ctx context.Context, B *readline.Buffer) readline.Result {
 	markerPos := seekMarker(B)
 	if markerPos < 0 {
 		return M.cmdLatinMode(ctx, B)
 	}
 	B.ReplaceAndRepaint(markerPos, "")
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
-func (m *Mode) cmdToggleKana(_ context.Context, B *rl.Buffer) rl.Result {
+func (m *Mode) cmdToggleKana(_ context.Context, B *readline.Buffer) readline.Result {
 	m.enable(B, kanaTable[m.kana.switchTo])
 	if m.kana.switchTo == 1 {
 		m.message(B, msgHiragana)
 	} else {
 		m.message(B, msgKatakana)
 	}
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
-func (M *Mode) cmdAbbrevMode(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdAbbrevMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	if seekMarker(B) >= 0 {
-		return rl.CONTINUE
+		return readline.CONTINUE
 	}
 	M.restoreKeyMap(B)
 	B.InsertAndRepaint(markerWhite)
-	B.BindKey(" ", &rl.GoCommand{
+	B.BindKey(" ", &readline.GoCommand{
 		Name: "SKK_ABBREV_START_HENKAN",
-		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
+		Func: func(ctx context.Context, B *readline.Buffer) readline.Result {
 			rc := M.cmdStartHenkan(ctx, B)
 			M.enable(B, hiragana)
 			M.message(B, msgHiragana)
@@ -393,15 +393,15 @@ func (M *Mode) cmdAbbrevMode(ctx context.Context, B *rl.Buffer) rl.Result {
 		},
 	})
 	M.message(B, msgAbbrev)
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
 type canLookup interface {
-	Lookup(keys.Code) (rl.Command, bool)
+	Lookup(keys.Code) (readline.Command, bool)
 }
 
 type canBindKey interface {
-	BindKey(keys.Code, rl.Command)
+	BindKey(keys.Code, readline.Command)
 }
 
 type canKeyMap interface {
@@ -421,13 +421,13 @@ func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 		u := &_Trigger{Key: byte(unicode.ToLower(c)), M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
-	X.BindKey("q", &rl.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
-	X.BindKey("/", &rl.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
-	X.BindKey(" ", &rl.GoCommand{Name: "SKK_START_HENKAN", Func: mode.cmdStartHenkan})
-	X.BindKey("l", &rl.GoCommand{Name: "SKK_LATIN_MODE", Func: mode.cmdLatinMode})
-	X.BindKey("L", &rl.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: mode.cmdJis0208LatinMode})
-	X.BindKey(keys.CtrlG, &rl.GoCommand{Name: "SKK_CANCEL", Func: mode.cmdCancel})
-	X.BindKey(mode.ctrlJ, &rl.GoCommand{Name: "SKK_KAKUTEI", Func: mode.cmdKakutei})
+	X.BindKey("q", &readline.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
+	X.BindKey("/", &readline.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
+	X.BindKey(" ", &readline.GoCommand{Name: "SKK_START_HENKAN", Func: mode.cmdStartHenkan})
+	X.BindKey("l", &readline.GoCommand{Name: "SKK_LATIN_MODE", Func: mode.cmdLatinMode})
+	X.BindKey("L", &readline.GoCommand{Name: "SKK_JISX0208_LATIN_MODE", Func: mode.cmdJis0208LatinMode})
+	X.BindKey(keys.CtrlG, &readline.GoCommand{Name: "SKK_CANCEL", Func: mode.cmdCancel})
+	X.BindKey(mode.ctrlJ, &readline.GoCommand{Name: "SKK_KAKUTEI", Func: mode.cmdKakutei})
 }
 
 func (M *Mode) backupKeyMap(km canLookup) {
@@ -435,7 +435,7 @@ func (M *Mode) backupKeyMap(km canLookup) {
 		return
 	}
 	debug("backupKeyMap")
-	M.saveMap = make([]rl.Command, 0, 0x80)
+	M.saveMap = make([]readline.Command, 0, 0x80)
 	for i := '\x00'; i <= '\x80'; i++ {
 		key := keys.Code(string(i))
 		val, _ := km.Lookup(key)
@@ -450,27 +450,27 @@ func (M *Mode) restoreKeyMap(km canBindKey) {
 	}
 }
 
-func (M *Mode) cmdLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	debug("cmdLatinMode")
 	M.restoreKeyMap(B)
 	M.message(B, msgLatin)
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
 
-func (M *Mode) cmdAcceptLineWithLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdAcceptLineWithLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	if M.saveMap != nil {
 		M.restoreKeyMap(B)
 		M.message(B, msgLatin)
 	}
-	return rl.ENTER
+	return readline.ENTER
 }
 
-func (M *Mode) cmdIntrruptWithLatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdIntrruptWithLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	if M.saveMap != nil {
 		M.restoreKeyMap(B)
 		M.message(B, msgLatin)
 	}
-	return rl.INTR
+	return readline.INTR
 }
 
 func hanToZen(c rune) rune {
@@ -483,25 +483,25 @@ func hanToZen(c rune) rune {
 	return c - ' ' + '\uFF00'
 }
 
-func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *rl.Buffer) rl.Result {
+func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	for i := rune(' '); i < '\x7F'; i++ {
 		z := string(hanToZen(i))
-		B.BindKey(keys.Code(string(i)), &rl.GoCommand{
+		B.BindKey(keys.Code(string(i)), &readline.GoCommand{
 			Name: "SKK_JISX0208_LATIN_INSERT_" + z,
-			Func: func(_ context.Context, B *rl.Buffer) rl.Result {
+			Func: func(_ context.Context, B *readline.Buffer) readline.Result {
 				B.InsertAndRepaint(z)
-				return rl.CONTINUE
+				return readline.CONTINUE
 			}})
 	}
-	B.BindKey(M.ctrlJ, &rl.GoCommand{
+	B.BindKey(M.ctrlJ, &readline.GoCommand{
 		Name: "SKK_JISX0208_LATIN_KAKUTEI",
-		Func: func(ctx context.Context, B *rl.Buffer) rl.Result {
+		Func: func(ctx context.Context, B *readline.Buffer) readline.Result {
 			M.restoreKeyMap(B)
 			M.enable(B, hiragana)
 			M.message(B, msgHiragana)
-			return rl.CONTINUE
+			return readline.CONTINUE
 		},
 	})
 	M.message(B, msg0208)
-	return rl.CONTINUE
+	return readline.CONTINUE
 }
