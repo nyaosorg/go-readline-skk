@@ -133,17 +133,6 @@ func pragma(line string) map[string]string {
 	return m
 }
 
-// Load reads the contents of an dictionary from io.Reader as UTF8
-func (j *Jisyo) Read(r io.Reader) error {
-	sc := bufio.NewScanner(r)
-	var okuri bool
-	for sc.Scan() {
-		line := sc.Text()
-		okuri = j.readOne(line, okuri)
-	}
-	return sc.Err()
-}
-
 func (j *Jisyo) readAsEucJpOrUtf8(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	decoder := japanese.EUCJP.NewDecoder()
