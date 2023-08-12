@@ -82,12 +82,6 @@ func (j *Jisyo) Load(filename string) error {
 	return j.ReadWithPragma(fd)
 }
 
-// Load reads the contents of an dictionary from io.Reader as EUC-JP
-func (j *Jisyo) ReadEucJp(r io.Reader) error {
-	decoder := japanese.EUCJP.NewDecoder()
-	return j.Read(decoder.Reader(r))
-}
-
 func (j *Jisyo) readOne(line string, okuri bool) bool {
 	if len(line) > 2 && line[0] == ';' && line[1] == ';' {
 		if strings.HasPrefix(line, ariHeader) {
