@@ -125,9 +125,8 @@ func (M *Mode) lookup(source string, okuri bool) ([]string, bool) {
 	return newList, true
 }
 
-func unshift[T any](list []T, value T) []T {
-	var zero T
-	list = append(list, zero)
+func unshift(list []string, value string) []string {
+	list = append(list, "")
 	copy(list[1:], list)
 	list[0] = value
 	return list
