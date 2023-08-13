@@ -313,7 +313,17 @@ func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Res
 		if index := strings.IndexByte("aiueo", trig.Key); index >= 0 {
 			postfix = trig.M.kana.table[string(trig.Key)]
 		} else {
-			postfix = "*" + string(trig.Key)
+			B.InsertAndRepaint("*" + string(trig.Key))
+			for {
+				input, _ := B.GetKey()
+				if length, value := trig.M.kana.find(B.Cursor, B.SubString, input); length >= 0 {
+					return trig.M.henkanMode(ctx, B, markerPos, source.String(), value)
+				}
+				if len(input) != 1 || !unicode.IsLower(rune(input[0])) {
+					return B.LookupCommand(input).Call(ctx, B)
+				}
+				B.InsertAndRepaint(input)
+			}
 		}
 		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
 	}
