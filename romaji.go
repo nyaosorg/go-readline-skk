@@ -102,6 +102,21 @@ var katakana = &_Kana{
 	switchTo: 0,
 }
 
+func (kana *_Kana) find(cursor int, substr func(int, int) string, next string) (int, string) {
+	for i := 3; i > 0; i-- {
+		if cursor >= i {
+			key := substr(cursor-i, cursor) + next
+			if value, ok := kana.table[key]; ok {
+				return i, value
+			}
+		}
+	}
+	if value, ok := kana.table[next]; ok {
+		return 0, value
+	}
+	return -1, ""
+}
+
 type _Romaji struct {
 	kana *_Kana
 	last string
@@ -112,17 +127,8 @@ func (R *_Romaji) String() string {
 }
 
 func (R *_Romaji) Call(ctx context.Context, B *readline.Buffer) readline.Result {
-	for i := 3; i > 0; i-- {
-		if B.Cursor >= i {
-			key := B.SubString(B.Cursor-i, B.Cursor) + R.last
-			if value, ok := R.kana.table[key]; ok {
-				B.ReplaceAndRepaint(B.Cursor-i, value)
-				return readline.CONTINUE
-			}
-		}
-	}
-	if value, ok := R.kana.table[R.last]; ok {
-		B.InsertAndRepaint(value)
+	if length, value := R.kana.find(B.Cursor, B.SubString, R.last); length >= 0 {
+		B.ReplaceAndRepaint(B.Cursor-length, value)
 	} else {
 		B.InsertAndRepaint(R.last)
 	}
