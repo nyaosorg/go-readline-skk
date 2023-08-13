@@ -314,15 +314,18 @@ func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Res
 			postfix = trig.M.kana.table[string(trig.Key)]
 		} else {
 			B.InsertAndRepaint("*" + string(trig.Key))
+			var typed strings.Builder
+			typed.WriteString(string(trig.Key))
 			for {
-				input, _ := B.GetKey()
-				if length, value := trig.M.kana.find(B.Cursor, B.SubString, input); length >= 0 {
+				key, _ := B.GetKey()
+				typed.WriteString(key)
+				if value, ok := trig.M.kana.table[typed.String()]; ok {
 					return trig.M.henkanMode(ctx, B, markerPos, source.String(), value)
 				}
-				if len(input) != 1 || !unicode.IsLower(rune(input[0])) {
-					return B.LookupCommand(input).Call(ctx, B)
+				if len(key) != 1 || !unicode.IsLower(rune(key[0])) {
+					return B.LookupCommand(key).Call(ctx, B)
 				}
-				B.InsertAndRepaint(input)
+				B.InsertAndRepaint(key)
 			}
 		}
 		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
