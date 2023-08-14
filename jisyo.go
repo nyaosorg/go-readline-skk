@@ -79,7 +79,7 @@ func (j *Jisyo) Load(filename string) error {
 		return err
 	}
 	defer fd.Close()
-	return j.readAsEucJpOrUtf8(fd)
+	return j.Read(fd)
 }
 
 func (j *Jisyo) readOne(line string, okuri bool) bool {
@@ -133,7 +133,7 @@ func pragma(line string) map[string]string {
 	return m
 }
 
-func (j *Jisyo) readAsEucJpOrUtf8(r io.Reader) error {
+func (j *Jisyo) Read(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	decoder := japanese.EUCJP.NewDecoder()
 	f := func(s string) string {
