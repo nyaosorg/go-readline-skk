@@ -44,7 +44,7 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 	if c.BindTo == nil {
 		c.BindTo = readline.GlobalKeyMap
 	}
-	c.BindTo.BindKey(c.CtrlJ, skkMode)
+	c.BindTo.BindKey(skkMode.ctrlJ, skkMode)
 	if !c.KeepModeOnExit {
 		c.BindTo.BindKey(keys.Enter, &readline.GoCommand{
 			Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
