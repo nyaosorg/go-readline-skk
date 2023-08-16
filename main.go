@@ -212,7 +212,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 				for {
 					var buffer strings.Builder
 					_current := current
-					for _, key := range "ASDFJKL:" {
+					for _, key := range "ASDFJKL" {
 						if _current >= len(list) {
 							break
 						}
@@ -223,7 +223,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 					fmt.Fprintf(&buffer, "[残り %d]", len(list)-_current)
 					key, err := M.ask1(B, buffer.String())
 					if err == nil {
-						if index := strings.Index("asdfjkl:", key); index >= 0 && current+index < len(list) {
+						if index := strings.Index("asdfjkl", key); index >= 0 && current+index < len(list) {
 							candidate, _, _ = strings.Cut(list[current+index], ";")
 							B.ReplaceAndRepaint(markerPos, candidate)
 							return readline.CONTINUE
@@ -243,7 +243,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 								}
 							}
 						} else if key == "x" {
-							current -= len("ASDFJKL:")
+							current -= len("ASDFJKL")
 							if current < listingStartIndex {
 								if current < 0 {
 									current = 0
