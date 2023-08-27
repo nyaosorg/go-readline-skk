@@ -85,5 +85,6 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 		m.enable(inputNewWord, hiragana)
 	}
 	defer B.RepaintAfterPrompt()
+	inputNewWord.BindKey("\x07", readline.CmdInterrupt)
 	return inputNewWord.ReadLine(ctx)
 }
