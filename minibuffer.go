@@ -68,6 +68,7 @@ func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 	io.WriteString(B.Out, "\x1B[2K")
 	M.MiniBuffer.Leave(B.Out)
 	B.RepaintAfterPrompt()
+	B.Out.Flush()
 	return rc, err
 }
 
