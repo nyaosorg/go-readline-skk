@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mattn/go-colorable"
+
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"github.com/nyaosorg/go-readline-skk"
@@ -15,6 +17,11 @@ import (
 
 func mains() error {
 	var ed readline.Editor
+
+	// Windows でエスケープシーケンスを有効にする
+	closer := colorable.EnableColorsStdout(nil)
+	defer closer()
+	ed.Writer = colorable.NewColorableStdout()
 
 	// ~/ はパッケージ側で展開されます
 	skkMode, err := skk.Config{
