@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -428,6 +429,25 @@ type canKeyMap interface {
 	CanBindKey
 }
 
+var rxUnicodeCode = regexp.MustCompile(`(?:U+)?([0-9A-Fa-f]{1,8})`)
+
+func (mode *Mode) cmdCodeMode(ctx context.Context, B *readline.Buffer) readline.Result {
+	for {
+		codeStr, err := mode.ask(ctx, B, "U+", false)
+		if err != nil || codeStr == "" {
+			return readline.CONTINUE
+		}
+		m := rxUnicodeCode.FindStringSubmatch(codeStr)
+		if m != nil {
+			value, err := strconv.ParseUint(m[1], 16, 32)
+			if err == nil {
+				B.InsertAndRepaint(string(rune(value)))
+				return readline.CONTINUE
+			}
+		}
+	}
+}
+
 func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 	mode.backupKeyMap(X)
 	mode.kana = K
@@ -440,6 +460,7 @@ func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 		u := &_Trigger{Key: byte(unicode.ToLower(c)), M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
+	X.BindKey("\\", &readline.GoCommand{Name: "SKK_CODE_MODE", Func: mode.cmdCodeMode})
 	X.BindKey("q", &readline.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
 	X.BindKey("/", &readline.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
 	X.BindKey(" ", &readline.GoCommand{Name: "SKK_START_HENKAN", Func: mode.cmdStartHenkan})
