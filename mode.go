@@ -66,7 +66,7 @@ func (M *Mode) String() string {
 // Call is readline.Command to start SKK henkan mode.
 func (M *Mode) Call(ctx context.Context, B *readline.Buffer) readline.Result {
 	M.enable(B, hiragana)
-	M.message(B, msgHiragana)
+	M.displayMode(B, msgHiragana)
 	return readline.CONTINUE
 }
 

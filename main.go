@@ -390,9 +390,9 @@ func (M *Mode) cmdCancel(ctx context.Context, B *readline.Buffer) readline.Resul
 func (m *Mode) cmdToggleKana(_ context.Context, B *readline.Buffer) readline.Result {
 	m.enable(B, kanaTable[m.kana.switchTo])
 	if m.kana.switchTo == 1 {
-		m.message(B, msgHiragana)
+		m.displayMode(B, msgHiragana)
 	} else {
-		m.message(B, msgKatakana)
+		m.displayMode(B, msgKatakana)
 	}
 	return readline.CONTINUE
 }
@@ -408,11 +408,11 @@ func (M *Mode) cmdAbbrevMode(ctx context.Context, B *readline.Buffer) readline.R
 		Func: func(ctx context.Context, B *readline.Buffer) readline.Result {
 			rc := M.cmdStartHenkan(ctx, B)
 			M.enable(B, hiragana)
-			M.message(B, msgHiragana)
+			M.displayMode(B, msgHiragana)
 			return rc
 		},
 	})
-	M.message(B, msgAbbrev)
+	M.displayMode(B, msgAbbrev)
 	return readline.CONTINUE
 }
 
@@ -493,14 +493,14 @@ func (M *Mode) restoreKeyMap(km CanBindKey) {
 func (M *Mode) cmdLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	debug("cmdLatinMode")
 	M.restoreKeyMap(B)
-	M.message(B, msgLatin)
+	M.displayMode(B, msgLatin)
 	return readline.CONTINUE
 }
 
 func (M *Mode) cmdAcceptLineWithLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	if M.saveMap != nil {
 		M.restoreKeyMap(B)
-		M.message(B, msgLatin)
+		M.displayMode(B, msgLatin)
 	}
 	return readline.ENTER
 }
@@ -508,7 +508,7 @@ func (M *Mode) cmdAcceptLineWithLatinMode(ctx context.Context, B *readline.Buffe
 func (M *Mode) cmdIntrruptWithLatinMode(ctx context.Context, B *readline.Buffer) readline.Result {
 	if M.saveMap != nil {
 		M.restoreKeyMap(B)
-		M.message(B, msgLatin)
+		M.displayMode(B, msgLatin)
 	}
 	return readline.INTR
 }
@@ -538,10 +538,10 @@ func (M *Mode) cmdJis0208LatinMode(ctx context.Context, B *readline.Buffer) read
 		Func: func(ctx context.Context, B *readline.Buffer) readline.Result {
 			M.restoreKeyMap(B)
 			M.enable(B, hiragana)
-			M.message(B, msgHiragana)
+			M.displayMode(B, msgHiragana)
 			return readline.CONTINUE
 		},
 	})
-	M.message(B, msg0208)
+	M.displayMode(B, msg0208)
 	return readline.CONTINUE
 }

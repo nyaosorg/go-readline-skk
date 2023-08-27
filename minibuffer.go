@@ -55,6 +55,12 @@ func (M *Mode) message(B *readline.Buffer, text string) {
 	B.RepaintAfterPrompt()
 }
 
+func (M *Mode) displayMode(B *readline.Buffer, text string) {
+	if _, ok := M.MiniBuffer.(MiniBufferOnNextLine); ok {
+		M.message(B, text)
+	}
+}
+
 func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 	M.MiniBuffer.Enter(B.Out, prompt)
 	B.Out.Flush()
