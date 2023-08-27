@@ -442,6 +442,7 @@ func (mode *Mode) cmdCodeMode(ctx context.Context, B *readline.Buffer) readline.
 			value, err := strconv.ParseUint(m[1], 16, 32)
 			if err == nil {
 				B.InsertAndRepaint(string(rune(value)))
+				B.Out.Flush()
 				return readline.CONTINUE
 			}
 		}

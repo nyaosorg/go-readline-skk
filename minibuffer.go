@@ -73,6 +73,7 @@ func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 }
 
 func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime bool) (string, error) {
+	B.Out.Flush()
 	inputNewWord := &readline.Editor{
 		PromptWriter: func(w io.Writer) (int, error) {
 			return M.MiniBuffer.Enter(w, prompt)
@@ -83,15 +84,20 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 			return M.MiniBuffer.Leave(w)
 		},
 	}
-	if ime {
-		m := &Mode{
-			User:       M.User,
-			System:     M.System,
-			MiniBuffer: M.MiniBuffer.Recurse(prompt),
-		}
-		m.enable(inputNewWord, hiragana)
+	m := &Mode{
+		User:       M.User,
+		System:     M.System,
+		MiniBuffer: M.MiniBuffer.Recurse(prompt),
+		ctrlJ:      M.ctrlJ,
 	}
-	defer B.RepaintAfterPrompt()
+	if ime {
+		m.enable(inputNewWord, hiragana)
+	} else {
+		inputNewWord.BindKey(m.ctrlJ, m)
+	}
 	inputNewWord.BindKey("\x07", readline.CmdInterrupt)
-	return inputNewWord.ReadLine(ctx)
+	rc, err := inputNewWord.ReadLine(ctx)
+	B.RepaintAfterPrompt()
+	B.Out.Flush()
+	return rc, err
 }
