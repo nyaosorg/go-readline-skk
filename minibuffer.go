@@ -95,6 +95,7 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 	} else {
 		inputNewWord.BindKey(m.ctrlJ, m)
 	}
+	m.setupQuitWithLatinMode(inputNewWord)
 	inputNewWord.BindKey("\x07", readline.CmdInterrupt)
 	rc, err := inputNewWord.ReadLine(ctx)
 	B.RepaintAfterPrompt()

@@ -46,16 +46,20 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 	}
 	c.BindTo.BindKey(skkMode.ctrlJ, skkMode)
 	if !c.KeepModeOnExit {
-		c.BindTo.BindKey(keys.Enter, &readline.GoCommand{
-			Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
-			Func: skkMode.cmdAcceptLineWithLatinMode,
-		})
-		c.BindTo.BindKey(keys.CtrlC, &readline.GoCommand{
-			Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
-			Func: skkMode.cmdIntrruptWithLatinMode,
-		})
+		skkMode.setupQuitWithLatinMode(c.BindTo)
 	}
 	return skkMode, nil
+}
+
+func (skkMode *Mode) setupQuitWithLatinMode(X CanBindKey) {
+	X.BindKey(keys.Enter, &readline.GoCommand{
+		Name: "SKK_ACCEPT_LINE_WITH_LATIN_MODE",
+		Func: skkMode.cmdAcceptLineWithLatinMode,
+	})
+	X.BindKey(keys.CtrlC, &readline.GoCommand{
+		Name: "SKK_INTRRUPT_WITH_LATIN_MODE",
+		Func: skkMode.cmdIntrruptWithLatinMode,
+	})
 }
 
 // String returns the name as the command starting SKK
