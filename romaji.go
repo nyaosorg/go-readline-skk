@@ -2,6 +2,8 @@ package skk
 
 import (
 	"context"
+	"strings"
+	"unicode"
 
 	"github.com/nyaosorg/go-readline-ny"
 )
@@ -130,7 +132,28 @@ func (R *_Romaji) Call(ctx context.Context, B *readline.Buffer) readline.Result 
 	if length, value := R.kana.find(B.Cursor, B.SubString, R.last); length >= 0 {
 		B.ReplaceAndRepaint(B.Cursor-length, value)
 	} else {
-		B.InsertAndRepaint(R.last)
+		var buffer strings.Builder
+		buffer.WriteString(R.last)
+		from := B.Cursor
+		B.InsertAndRepaint(string(R.last))
+		for {
+			input, _ := B.GetKey()
+			if len(input) != 1 {
+				eval(ctx, B, input)
+				return readline.CONTINUE
+			}
+			if !unicode.IsLetter(rune(input[0])) {
+				B.ReplaceAndRepaint(from, buffer.String())
+				return readline.CONTINUE
+			}
+			c := unicode.ToLower(rune(input[0]))
+			buffer.WriteRune(c)
+			if value, ok := R.kana.table[buffer.String()]; ok {
+				B.ReplaceAndRepaint(from, value)
+				return readline.CONTINUE
+			}
+			B.InsertAndRepaint(string(c))
+		}
 	}
 	return readline.CONTINUE
 }
