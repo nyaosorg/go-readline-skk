@@ -57,6 +57,7 @@ var hiragana = &_Kana{
 		"gya": "ぎゃ", "gyi": "ぎぃ", "gyu": "ぎゅ", "gye": "ぎぇ", "gyo": "ぎょ",
 		"xya": "ゃ", "xyu": "ゅ", "xyo": "ょ", "xtu": "っ",
 
+		"zh": "←", "zj": "↓", "zk": "↑", "zl": "→",
 		"xtsu": "っ",
 	},
 	switchTo: 1,
@@ -99,6 +100,7 @@ var katakana = &_Kana{
 		"gya": "ギャ", "gyi": "ギィ", "gyu": "ギュ", "gye": "ギェ", "gyo": "ギョ",
 		"xya": "ャ", "xyu": "ュ", "xyo": "ョ", "xtu": "ッ",
 
+		"zh": "←", "zj": "↓", "zk": "↑", "zl": "→",
 		"xtsu": "ッ",
 	},
 	switchTo: 0,
