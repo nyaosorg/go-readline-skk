@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/nyaosorg/go-readline-ny"
 )
@@ -106,21 +107,6 @@ var katakana = &_Kana{
 	switchTo: 0,
 }
 
-func (kana *_Kana) find(cursor int, substr func(int, int) string, next string) (int, string) {
-	for i := 3; i > 0; i-- {
-		if cursor >= i {
-			key := substr(cursor-i, cursor) + next
-			if value, ok := kana.table[key]; ok {
-				return i, value
-			}
-		}
-	}
-	if value, ok := kana.table[next]; ok {
-		return 0, value
-	}
-	return -1, ""
-}
-
 type _Romaji struct {
 	kana *_Kana
 	last string
@@ -131,31 +117,36 @@ func (R *_Romaji) String() string {
 }
 
 func (R *_Romaji) Call(ctx context.Context, B *readline.Buffer) readline.Result {
-	if length, value := R.kana.find(B.Cursor, B.SubString, R.last); length >= 0 {
-		B.ReplaceAndRepaint(B.Cursor-length, value)
-	} else {
-		var buffer strings.Builder
-		buffer.WriteString(R.last)
-		from := B.Cursor
-		B.InsertAndRepaint(string(R.last))
-		for {
-			input, _ := B.GetKey()
-			if len(input) != 1 {
-				eval(ctx, B, input)
+	if value, ok := R.kana.table[R.last]; ok {
+		B.InsertAndRepaint(value)
+		return readline.CONTINUE
+	}
+	var buffer strings.Builder
+	buffer.WriteString(R.last)
+	from := B.Cursor
+	B.InsertAndRepaint(string(R.last))
+	for {
+		input, _ := B.GetKey()
+		if len(input) != 1 {
+			eval(ctx, B, input)
+			return readline.CONTINUE
+		}
+		if !unicode.IsLetter(rune(input[0])) {
+			B.ReplaceAndRepaint(from, buffer.String())
+			return readline.CONTINUE
+		}
+		c := unicode.ToLower(rune(input[0]))
+		buffer.WriteRune(c)
+		if value, ok := R.kana.table[buffer.String()]; ok {
+			B.ReplaceAndRepaint(from, value)
+			if u, _ := utf8.DecodeLastRuneInString(value); u != c {
 				return readline.CONTINUE
 			}
-			if !unicode.IsLetter(rune(input[0])) {
-				B.ReplaceAndRepaint(from, buffer.String())
-				return readline.CONTINUE
-			}
-			c := unicode.ToLower(rune(input[0]))
+			buffer.Reset()
 			buffer.WriteRune(c)
-			if value, ok := R.kana.table[buffer.String()]; ok {
-				B.ReplaceAndRepaint(from, value)
-				return readline.CONTINUE
-			}
+			from = B.Cursor - 1
+		} else {
 			B.InsertAndRepaint(string(c))
 		}
 	}
-	return readline.CONTINUE
 }
