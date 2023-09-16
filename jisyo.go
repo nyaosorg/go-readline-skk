@@ -134,31 +134,26 @@ func pragma(line string) map[string]string {
 }
 
 func (j *Jisyo) Read(r io.Reader) error {
-	sc := bufio.NewScanner(r)
-	decoder := japanese.EUCJP.NewDecoder()
-	f := func(s string) string {
-		if utf8, err := decoder.String(s); err == nil {
-			return utf8
-		}
-		return s
-	}
-	var okuri bool
-	if sc.Scan() {
-		line := f(sc.Text())
+	utf8mode := false
+	var err error
+	r, err = detectAndRewind(r, func(line string) bool {
 		if len(line) > 0 && line[0] == ';' {
 			if m := pragma(line[1:]); m != nil && m["coding"] == "utf-8" {
-				f = func(s string) string {
-					return s
-				}
+				utf8mode = true
 			}
-		} else {
-			okuri = j.readOne(line, okuri)
 		}
+		return true
+	})
+	if err != nil {
+		return err
 	}
-
+	if !utf8mode {
+		r = japanese.EUCJP.NewDecoder().Reader(r)
+	}
+	sc := bufio.NewScanner(r)
+	okuri := false
 	for sc.Scan() {
-		text := sc.Text()
-		okuri = j.readOne(f(text), okuri)
+		okuri = j.readOne(sc.Text(), okuri)
 	}
 	return sc.Err()
 }
