@@ -84,15 +84,13 @@ func (M *Mode) SaveUserJisyo() error {
 		return nil
 	}
 	filename := expandEnv(M.userJisyoPath)
+
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return M.User.saveAs(filename)
+	}
 	tmpName := filename + ".TMP"
-	fd, err := os.Create(tmpName)
-	if err != nil {
-		return err
-	}
-	if _, err := M.User.writeToUtf8(fd); err != nil {
-		return err
-	}
-	if err := fd.Close(); err != nil {
+	if err := M.User.saveAs(tmpName); err != nil {
 		return err
 	}
 	backup := filename + ".BAK"

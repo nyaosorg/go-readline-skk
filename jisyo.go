@@ -218,6 +218,18 @@ func (j *Jisyo) writeToEucJp(w io.Writer) (n int64, err error) {
 	return wc.Result()
 }
 
+func (j *Jisyo) saveAs(fname string) error {
+	fd, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	if _, err := j.writeToUtf8(fd); err != nil {
+		fd.Close()
+		return err
+	}
+	return fd.Close()
+}
+
 func (j *Jisyo) writeToUtf8(w io.Writer) (n int64, err error) {
 	var wc writeCounter
 	if wc.Try(fmt.Fprintln(w, ";; -*- mode: fundamental; coding: utf-8 -*-")) {
