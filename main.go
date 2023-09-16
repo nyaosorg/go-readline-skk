@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/nyaosorg/go-readline-ny"
@@ -39,13 +40,14 @@ func (trig *_Trigger) String() string {
 
 // Mode is an instance of SKK. It contains system dictionaries and user dictionaries.
 type Mode struct {
-	User          *Jisyo
-	System        *Jisyo
-	MiniBuffer    MiniBuffer
-	saveMap       []readline.Command
-	kana          *_Kana
-	userJisyoPath string
-	ctrlJ         keys.Code
+	User           *Jisyo
+	System         *Jisyo
+	MiniBuffer     MiniBuffer
+	saveMap        []readline.Command
+	kana           *_Kana
+	userJisyoPath  string
+	userJisyoStamp time.Time
+	ctrlJ          keys.Code
 }
 
 var rxNumber = regexp.MustCompile(`[0-9]+`)

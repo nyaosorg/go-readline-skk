@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/text/encoding/japanese"
 )
@@ -73,13 +74,25 @@ func expandEnv(s string) string {
 }
 
 // Load reads the contents of an dictionary from a file.
+// It returns time-stamp and error.
 func (j *Jisyo) Load(filename string) error {
+	_, err := j.load(filename)
+	return err
+}
+
+func (j *Jisyo) load(filename string) (time.Time, error) {
+	var stamp time.Time
 	fd, err := os.Open(expandEnv(filename))
 	if err != nil {
-		return err
+		return stamp, err
 	}
 	defer fd.Close()
-	return j.Read(fd)
+
+	stat, err := fd.Stat()
+	if err == nil {
+		stamp = stat.ModTime()
+	}
+	return stamp, j.Read(fd)
 }
 
 func (j *Jisyo) readOne(line string, okuri bool) bool {

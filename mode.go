@@ -29,7 +29,8 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		skkMode.ctrlJ = keys.CtrlJ
 	}
 	if c.UserJisyoPath != "" {
-		err := skkMode.User.Load(c.UserJisyoPath)
+		var err error
+		skkMode.userJisyoStamp, err = skkMode.User.load(c.UserJisyoPath)
 		if err != nil {
 			return nil, err
 		}
