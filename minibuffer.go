@@ -11,7 +11,7 @@ import (
 type MiniBuffer interface {
 	Enter(io.Writer, string) (int, error)
 	Leave(io.Writer) (int, error)
-	Recurse(string) MiniBuffer
+	Recurse() MiniBuffer
 }
 
 type MiniBufferOnNextLine struct{}
@@ -28,31 +28,31 @@ func (MiniBufferOnNextLine) Leave(w io.Writer) (int, error) {
 	return io.WriteString(w, "\x1B[F")
 }
 
-func (q MiniBufferOnNextLine) Recurse(originalPrompt string) MiniBuffer {
-	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
+func (MiniBufferOnNextLine) Recurse() MiniBuffer {
+	return MiniBufferOnCurrentLine{}
 }
 
 type MiniBufferOnCurrentLine struct {
 	OriginalPrompt string
 }
 
-func (q *MiniBufferOnCurrentLine) Enter(w io.Writer, prompt string) (int, error) {
+func (MiniBufferOnCurrentLine) Enter(w io.Writer, prompt string) (int, error) {
 	return fmt.Fprintf(w, "\r%s ", prompt)
 }
 
-func (q *MiniBufferOnCurrentLine) Leave(w io.Writer) (int, error) {
-	return fmt.Fprintf(w, "\r%s \x1B[K", q.OriginalPrompt)
+func (MiniBufferOnCurrentLine) Leave(w io.Writer) (int, error) {
+	return fmt.Fprintf(w, "\r\x1B[K")
 }
 
-func (q *MiniBufferOnCurrentLine) Recurse(originalPrompt string) MiniBuffer {
-	return &MiniBufferOnCurrentLine{OriginalPrompt: originalPrompt}
+func (MiniBufferOnCurrentLine) Recurse() MiniBuffer {
+	return MiniBufferOnCurrentLine{}
 }
 
 func (M *Mode) message(B *readline.Buffer, text string) {
 	M.MiniBuffer.Enter(B.Out, text)
 	io.WriteString(B.Out, "\x1B[K")
 	M.MiniBuffer.Leave(B.Out)
-	B.RepaintAfterPrompt()
+	B.RepaintLastLine()
 }
 
 func (M *Mode) displayMode(B *readline.Buffer, text string) {
@@ -67,7 +67,7 @@ func (M *Mode) ask1(B *readline.Buffer, prompt string) (string, error) {
 	rc, err := B.GetKey()
 	io.WriteString(B.Out, "\x1B[2K")
 	M.MiniBuffer.Leave(B.Out)
-	B.RepaintAfterPrompt()
+	B.RepaintLastLine()
 	B.Out.Flush()
 	return rc, err
 }
@@ -87,7 +87,7 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 	m := &Mode{
 		User:       M.User,
 		System:     M.System,
-		MiniBuffer: M.MiniBuffer.Recurse(prompt),
+		MiniBuffer: M.MiniBuffer.Recurse(),
 		ctrlJ:      M.ctrlJ,
 	}
 	if ime {
@@ -98,7 +98,7 @@ func (M *Mode) ask(ctx context.Context, B *readline.Buffer, prompt string, ime b
 	m.setupQuitWithLatinMode(inputNewWord)
 	inputNewWord.BindKey("\x07", readline.CmdInterrupt)
 	rc, err := inputNewWord.ReadLine(ctx)
-	B.RepaintAfterPrompt()
+	B.RepaintLastLine()
 	B.Out.Flush()
 	return rc, err
 }

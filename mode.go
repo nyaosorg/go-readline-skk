@@ -14,6 +14,7 @@ type Config struct {
 	CtrlJ            keys.Code
 	BindTo           CanBindKey
 	KeepModeOnExit   bool
+	MiniBuffer       MiniBuffer
 }
 
 func (c Config) Setup() (skkMode *Mode, err error) {
@@ -22,7 +23,9 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		System:     newJisyo(),
 		MiniBuffer: MiniBufferOnNextLine{},
 	}
-
+	if c.MiniBuffer != nil {
+		skkMode.MiniBuffer = c.MiniBuffer
+	}
 	if c.CtrlJ != "" {
 		skkMode.ctrlJ = c.CtrlJ
 	} else {
