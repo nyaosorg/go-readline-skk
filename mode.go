@@ -2,10 +2,10 @@ package skk
 
 import (
 	"context"
-	"os"
-
+	"fmt"
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
+	"os"
 )
 
 type Config struct {
@@ -85,11 +85,34 @@ func (M *Mode) SaveUserJisyo() error {
 	}
 	filename := expandEnv(M.userJisyoPath)
 
-	_, err := os.Stat(filename)
+	stat, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return M.User.saveAs(filename)
 	}
 	tmpName := filename + ".TMP"
+
+	if err == nil && stat.ModTime() != M.userJisyoStamp {
+		// merge
+		other := newJisyo()
+		if err = other.Load(filename); err != nil {
+			return fmt.Errorf("fail to merge: %w", err)
+		}
+		for _, h := range M.User.ariHistory {
+			if h.val == nil {
+				delete(other.ari, h.key)
+			} else {
+				other.ari[h.key] = h.val
+			}
+		}
+		for _, h := range M.User.nasiHistory {
+			if h.val == nil {
+				delete(other.nasi, h.key)
+			} else {
+				other.nasi[h.key] = h.val
+			}
+		}
+		M.User = other
+	}
 	if err := M.User.saveAs(tmpName); err != nil {
 		return err
 	}

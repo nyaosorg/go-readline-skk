@@ -150,7 +150,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *readline.Buffer, source stri
 		}
 	}
 	// リストの先頭に挿入
-	M.User.store(source, okuri, unshift(list, newWord))
+	M.User.storeAndLearn(source, okuri, unshift(list, newWord))
 	return newWord, true
 }
 
@@ -193,7 +193,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 			removeOne(B, markerPos)
 			if current > 0 {
 				moveTop(list, current)
-				M.User.store(source, okuri, list)
+				M.User.storeAndLearn(source, okuri, list)
 			}
 			return readline.CONTINUE
 		} else if input == " " {
@@ -285,7 +285,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 							copy(list[current:], list[current+1:])
 						}
 						list = list[:len(list)-1]
-						M.User.store(source, okuri, list)
+						M.User.storeAndLearn(source, okuri, list)
 					}
 					B.ReplaceAndRepaint(markerPos, "")
 					return readline.CONTINUE
@@ -298,7 +298,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 			removeOne(B, markerPos)
 			if current > 0 {
 				moveTop(list, current)
-				M.User.store(source, okuri, list)
+				M.User.storeAndLearn(source, okuri, list)
 			}
 			return eval(ctx, B, input)
 		}

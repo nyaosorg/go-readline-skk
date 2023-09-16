@@ -18,10 +18,17 @@ const (
 	nasiHeader = ";; okuri-nasi entries."
 )
 
+type _History struct {
+	key string
+	val []string
+}
+
 // Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo struct {
-	ari  map[string][]string
-	nasi map[string][]string
+	ari         map[string][]string
+	nasi        map[string][]string
+	ariHistory  []_History
+	nasiHistory []_History
 }
 
 func newJisyo() *Jisyo {
@@ -48,11 +55,22 @@ func (j *Jisyo) store(key string, okuri bool, value []string) {
 	}
 }
 
+func (j *Jisyo) storeAndLearn(key string, okuri bool, value []string) {
+	j.store(key, okuri, value)
+	if okuri {
+		j.ariHistory = append(j.ariHistory, _History{key: key, val: value})
+	} else {
+		j.nasiHistory = append(j.nasiHistory, _History{key: key, val: value})
+	}
+}
+
 func (j *Jisyo) remove(key string, okuri bool) {
 	if okuri {
 		delete(j.ari, key)
+		j.ariHistory = append(j.ariHistory, _History{key: key, val: nil})
 	} else {
 		delete(j.nasi, key)
+		j.nasiHistory = append(j.nasiHistory, _History{key: key, val: nil})
 	}
 }
 
