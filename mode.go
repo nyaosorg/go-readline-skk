@@ -6,6 +6,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny"
 	"github.com/nyaosorg/go-readline-ny/keys"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -53,6 +54,31 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 		skkMode.setupQuitWithLatinMode(c.BindTo)
 	}
 	return skkMode, nil
+}
+
+func (c Config) SetupWithString(env string) (*Mode, error) {
+	for {
+		var env1 string
+		var hasSemi bool
+
+		env1, env, hasSemi = strings.Cut(env, ";")
+		if env1 = strings.TrimSpace(env1); env1 != "" {
+			name, value, hasEq := strings.Cut(env1, "=")
+			if hasEq {
+				switch strings.ToLower(name) {
+				case "user":
+					c.UserJisyoPath = value
+				default:
+					return nil, fmt.Errorf("%s=: invalid keyword", name)
+				}
+			} else {
+				c.SystemJisyoPaths = append(c.SystemJisyoPaths, env1)
+			}
+		}
+		if !hasSemi {
+			return c.Setup()
+		}
+	}
 }
 
 func (skkMode *Mode) setupQuitWithLatinMode(X CanBindKey) {
