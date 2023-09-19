@@ -3,10 +3,11 @@ package skk
 import (
 	"context"
 	"fmt"
-	"github.com/nyaosorg/go-readline-ny"
-	"github.com/nyaosorg/go-readline-ny/keys"
 	"os"
 	"strings"
+
+	"github.com/nyaosorg/go-readline-ny"
+	"github.com/nyaosorg/go-readline-ny/keys"
 )
 
 type Config struct {
