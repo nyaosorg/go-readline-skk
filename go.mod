@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/mattn/go-colorable v0.1.13
-	github.com/nyaosorg/go-readline-ny v0.14.1
+	github.com/nyaosorg/go-readline-ny v0.14.2-0.20230920061636-989fb80d349e
 	golang.org/x/text v0.13.0
 )
 
