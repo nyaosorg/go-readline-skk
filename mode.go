@@ -60,9 +60,9 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 func (c Config) SetupWithString(env string) (*Mode, error) {
 	for {
 		var env1 string
-		var hasSemi bool
+		var hasSep bool
 
-		env1, env, hasSemi = strings.Cut(env, ";")
+		env1, env, hasSep = strings.Cut(env, string(os.PathListSeparator))
 		if env1 = strings.TrimSpace(env1); env1 != "" {
 			name, value, hasEq := strings.Cut(env1, "=")
 			if hasEq {
@@ -76,7 +76,7 @@ func (c Config) SetupWithString(env string) (*Mode, error) {
 				c.SystemJisyoPaths = append(c.SystemJisyoPaths, env1)
 			}
 		}
-		if !hasSemi {
+		if !hasSep {
 			return c.Setup()
 		}
 	}
