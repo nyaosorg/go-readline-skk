@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -94,13 +95,23 @@ func expandEnv(s string) string {
 // Load reads the contents of an dictionary from a file.
 // It returns time-stamp and error.
 func (j *Jisyo) Load(filename string) error {
-	_, err := j.load(filename)
-	return err
+	filename = expandEnv(filename)
+	matches, err := filepath.Glob(filename)
+	if err != nil {
+		_, err = j.load(filename)
+		return err
+	}
+	for _, fn := range matches {
+		if _, err = j.load(fn); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (j *Jisyo) load(filename string) (time.Time, error) {
 	var stamp time.Time
-	fd, err := os.Open(expandEnv(filename))
+	fd, err := os.Open(filename)
 	if err != nil {
 		return stamp, err
 	}
