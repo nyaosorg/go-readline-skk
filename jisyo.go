@@ -236,17 +236,6 @@ func (j *Jisyo) writeTo(w io.Writer) (n int64, err error) {
 	return wc.Result()
 }
 
-// WriteTo outputs the contents of dictonary with EUC-JP
-func (j *Jisyo) writeToEucJp(w io.Writer) (n int64, err error) {
-	var wc writeCounter
-	encoder := japanese.EUCJP.NewEncoder()
-	if wc.Try(fmt.Fprintln(w, ";; -*- mode: fundamental; coding: euc-jp -*-")) {
-		return wc.Result()
-	}
-	wc.Try64(j.writeTo(encoder.Writer(w)))
-	return wc.Result()
-}
-
 func (j *Jisyo) saveAs(fname string) error {
 	fd, err := os.Create(fname)
 	if err != nil {
