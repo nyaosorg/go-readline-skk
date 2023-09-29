@@ -2,6 +2,7 @@ package skk
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -175,19 +176,29 @@ func pragma(line string) map[string]string {
 	return m
 }
 
+func peekLine(r io.Reader) (io.Reader, string, error) {
+	var buffer bytes.Buffer
+	br := bufio.NewReader(r)
+
+	line, err := br.ReadString('\n')
+	buffer.WriteString(line)
+	io.CopyN(&buffer, br, int64(br.Buffered()))
+	if err == io.EOF {
+		return &buffer, line, nil
+	}
+	return io.MultiReader(&buffer, r), line, err
+}
+
 func (j *Jisyo) Read(r io.Reader) error {
 	utf8mode := false
-	var err error
-	r, err = detectAndRewind(r, func(line string) bool {
-		if len(line) > 0 && line[0] == ';' {
-			if m := pragma(line[1:]); m != nil && m["coding"] == "utf-8" {
-				utf8mode = true
-			}
-		}
-		return true
-	})
+	r, line, err := peekLine(r)
 	if err != nil {
 		return err
+	}
+	if len(line) > 0 && line[0] == ';' {
+		if m := pragma(line[1:]); m != nil && m["coding"] == "utf-8" {
+			utf8mode = true
+		}
 	}
 	if !utf8mode {
 		r = japanese.EUCJP.NewDecoder().Reader(r)
