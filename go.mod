@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/mattn/go-colorable v0.1.13
-	github.com/nyaosorg/go-readline-ny v0.14.2-0.20230920061636-989fb80d349e
+	github.com/nyaosorg/go-readline-ny v0.15.0
 	golang.org/x/text v0.13.0
 )
 
@@ -15,4 +15,5 @@ require (
 	github.com/mattn/go-tty v0.0.5 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
 )
