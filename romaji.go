@@ -127,7 +127,7 @@ func (R *_Romaji) Call(ctx context.Context, B *readline.Buffer) readline.Result 
 	B.InsertAndRepaint(string(R.last))
 	for {
 		input, _ := B.GetKey()
-		if len(input) != 1 {
+		if len(input) != 1 || input[0] < ' ' {
 			eval(ctx, B, input)
 			return readline.CONTINUE
 		}
