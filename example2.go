@@ -32,6 +32,7 @@ func mains() error {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 		} else {
+			ed.Coloring = &skk.Coloring{}
 			defer func() {
 				err := skkMode.SaveUserJisyo()
 				if err != nil {
