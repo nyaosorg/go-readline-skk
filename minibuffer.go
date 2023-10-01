@@ -25,7 +25,7 @@ func (MiniBufferOnNextLine) Enter(w io.Writer, prompt string) (int, error) {
 }
 
 func (MiniBufferOnNextLine) Leave(w io.Writer) (int, error) {
-	return io.WriteString(w, "\x1B[F")
+	return io.WriteString(w, "\r\x1B[A")
 }
 
 func (MiniBufferOnNextLine) Recurse() MiniBuffer {
