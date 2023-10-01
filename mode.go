@@ -36,7 +36,7 @@ func (c Config) Setup() (skkMode *Mode, err error) {
 	if c.UserJisyoPath != "" {
 		var err error
 		skkMode.userJisyoStamp, err = skkMode.User.load(expandEnv(c.UserJisyoPath))
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return nil, err
 		}
 		skkMode.userJisyoPath = c.UserJisyoPath
