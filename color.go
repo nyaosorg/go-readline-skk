@@ -10,6 +10,9 @@ type Coloring struct {
 }
 
 const (
+	whiteMarkerBit = 1
+	blackMarkerBit = 2
+
 	ansiUnderline   = 4
 	ansiReverse     = 7
 	ansiNotUnderine = 24
@@ -17,21 +20,25 @@ const (
 )
 
 func (c *Coloring) Init() readline.ColorSequence {
-	c.bits = 0
 	var color readline.ColorSequence
 	if c.Base != nil {
 		color = c.Base.Init()
 	}
-	return color.Add(ansiNotReverse).Add(ansiNotUnderine)
+	if (c.bits & whiteMarkerBit) != 0 {
+		color = color.Add(ansiNotReverse)
+		c.bits &^= whiteMarkerBit
+	}
+	if (c.bits & blackMarkerBit) != 0 {
+		color = color.Add(ansiNotUnderine)
+		c.bits &^= blackMarkerBit
+	}
+	return color
 }
 
 func (c *Coloring) Next(ch rune) readline.ColorSequence {
 	const (
 		markerWhite = '▽'
 		markerBlack = '▼'
-
-		whiteMarkerBit = 1
-		blackMarkerBit = 2
 	)
 	if ch == readline.CursorPositionDummyRune {
 		c.bits &^= whiteMarkerBit | blackMarkerBit
