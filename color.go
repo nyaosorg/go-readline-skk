@@ -13,24 +13,14 @@ const (
 	whiteMarkerBit = 1
 	blackMarkerBit = 2
 
-	ansiUnderline   = 4
-	ansiReverse     = 7
-	ansiNotUnderine = 24
-	ansiNotReverse  = 27
+	ansiUnderline = 4
+	ansiReverse   = 7
 )
 
 func (c *Coloring) Init() readline.ColorSequence {
-	var color readline.ColorSequence
+	color := readline.SGR1(0)
 	if c.Base != nil {
-		color = c.Base.Init()
-	}
-	if (c.bits & whiteMarkerBit) != 0 {
-		color = color.Add(ansiNotReverse)
-		c.bits &^= whiteMarkerBit
-	}
-	if (c.bits & blackMarkerBit) != 0 {
-		color = color.Add(ansiNotUnderine)
-		c.bits &^= blackMarkerBit
+		color = color.Chain(c.Base.Init())
 	}
 	return color
 }
@@ -47,20 +37,16 @@ func (c *Coloring) Next(ch rune) readline.ColorSequence {
 	} else if ch == markerBlack {
 		c.bits |= blackMarkerBit
 	}
-	var color readline.ColorSequence
+	color := readline.SGR1(0)
 	if c.Base != nil {
-		color = c.Base.Next(ch)
+		color = color.Chain(c.Base.Next(ch))
 	}
 
 	if (c.bits & whiteMarkerBit) != 0 {
 		color = color.Add(ansiReverse)
-	} else {
-		color = color.Add(ansiNotReverse)
 	}
 	if (c.bits & blackMarkerBit) != 0 {
 		color = color.Add(ansiUnderline)
-	} else {
-		color = color.Add(ansiNotUnderine)
 	}
 
 	return color
