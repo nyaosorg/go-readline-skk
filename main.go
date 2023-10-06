@@ -390,6 +390,21 @@ func (M *Mode) cmdCancel(ctx context.Context, B *readline.Buffer) readline.Resul
 }
 
 func (m *Mode) cmdToggleKana(_ context.Context, B *readline.Buffer) readline.Result {
+	markerPos := seekMarker(B)
+	if markerPos >= 0 {
+		var buffer strings.Builder
+		for _, c := range B.SubString(markerPos+1, B.Cursor) {
+			if 'あ' <= c && c <= 'ゖ' {
+				c += 'ア' - 'あ'
+			} else if 'ア' <= c && c <= 'ヶ' {
+				c += 'あ' - 'ア'
+			}
+			buffer.WriteRune(c)
+		}
+		B.ReplaceAndRepaint(markerPos, buffer.String())
+		return readline.CONTINUE
+
+	}
 	m.enable(B, kanaTable[m.kana.switchTo])
 	if m.kana.switchTo == 1 {
 		m.displayMode(B, msgHiragana)
