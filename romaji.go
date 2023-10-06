@@ -59,6 +59,8 @@ var hiragana = &_Kana{
 		"xya": "ゃ", "xyu": "ゅ", "xyo": "ょ", "xtu": "っ",
 
 		"zh": "←", "zj": "↓", "zk": "↑", "zl": "→",
+		"z,": "‥", "z-": "～", "z.": "…", "z/": "・", "z[": "『", "z]": "』",
+
 		"xtsu": "っ",
 	},
 	switchTo: 1,
@@ -102,6 +104,7 @@ var katakana = &_Kana{
 		"xya": "ャ", "xyu": "ュ", "xyo": "ョ", "xtu": "ッ",
 
 		"zh": "←", "zj": "↓", "zk": "↑", "zl": "→",
+		"z,": "‥", "z-": "～", "z.": "…", "z/": "・", "z[": "『", "z]": "』",
 		"xtsu": "ッ",
 	},
 	switchTo: 0,
@@ -129,10 +132,6 @@ func (R *_Romaji) Call(ctx context.Context, B *readline.Buffer) readline.Result 
 		input, _ := B.GetKey()
 		if len(input) != 1 || input[0] < ' ' {
 			eval(ctx, B, input)
-			return readline.CONTINUE
-		}
-		if !unicode.IsLetter(rune(input[0])) {
-			B.ReplaceAndRepaint(from, buffer.String())
 			return readline.CONTINUE
 		}
 		c := unicode.ToLower(rune(input[0]))
