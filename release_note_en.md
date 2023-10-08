@@ -1,3 +1,7 @@
+v0.3.0
+======
+Oct 08 2023
+
 - Fix: manually input inverted triangles were recognized as conversion markers
 
 v0.2.0
