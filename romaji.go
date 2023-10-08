@@ -24,7 +24,7 @@ const romajiTrigger = "aiueokstnhmyrwfgzdbpcj',.-[]Qx"
 var hiragana = &_Kana{
 	table: map[string]string{
 		"a": "あ", "i": "い", "u": "う", "e": "え", "o": "お", "'": "'",
-		",": "、", ".": "。", "-": "ー", "[": "「", "]": "」", "Q": markerWhite,
+		",": "、", ".": "。", "-": "ー", "[": "「", "]": "」",
 
 		"ka": "か", "ki": "き", "ku": "く", "ke": "け", "ko": "こ", "kk": "っk", "nk": "んk",
 		"sa": "さ", "si": "し", "su": "す", "se": "せ", "so": "そ", "ss": "っs", "ns": "んs",
@@ -81,7 +81,7 @@ var hiragana = &_Kana{
 var katakana = &_Kana{
 	table: map[string]string{
 		"a": "ア", "i": "イ", "u": "ウ", "e": "エ", "o": "オ", "'": "'",
-		",": "、", ".": "。", "-": "ー", "[": "「", "]": "」", "Q": markerWhite,
+		",": "、", ".": "。", "-": "ー", "[": "「", "]": "」",
 
 		"ka": "カ", "ki": "キ", "ku": "ク", "ke": "ケ", "ko": "コ", "kk": "ッk", "nk": "ンk",
 		"sa": "サ", "si": "シ", "su": "ス", "se": "セ", "so": "ソ", "ss": "ッs", "ns": "ンs",

@@ -477,6 +477,11 @@ func (mode *Mode) cmdCodeMode(ctx context.Context, B *readline.Buffer) readline.
 	}
 }
 
+func cmdInsertMarkerWhite(_ context.Context, B *readline.Buffer) readline.Result {
+	insertTriangleAndRepaint(B, markerWhiteRune)
+	return readline.CONTINUE
+}
+
 func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 	mode.backupKeyMap(X)
 	mode.kana = K
@@ -489,6 +494,7 @@ func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 		u := &_Trigger{Key: byte(unicode.ToLower(c)), M: mode}
 		X.BindKey(keys.Code(upperRomaji[i:i+1]), u)
 	}
+	X.BindKey("Q", &readline.GoCommand{Name: "SKK_INSERT_MARKER", Func: cmdInsertMarkerWhite})
 	X.BindKey("\\", &readline.GoCommand{Name: "SKK_CODE_MODE", Func: mode.cmdCodeMode})
 	X.BindKey("q", &readline.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
 	X.BindKey("/", &readline.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
