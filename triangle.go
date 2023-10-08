@@ -22,7 +22,7 @@ func (tr triangle) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (tr triangle) PrintTo(w io.Writer) {
-	fmt.Fprintf(w, "%c", rune(tr))
+	fmt.Fprintf(w, "%c%c", markerPrefix, rune(tr))
 }
 
 func (tr triangle) Width() readline.WidthT {
@@ -48,4 +48,5 @@ func insertTriangleAndRepaint(B *readline.Buffer, c triangle) {
 // 後程、改めて、正式版の「▽」に置き換える
 func replaceTriangle(B *readline.Buffer, pos int, c triangle) {
 	B.Buffer[pos] = readline.Cell{Moji: c}
+	B.DrawFromHead()
 }

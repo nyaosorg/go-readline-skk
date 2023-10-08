@@ -17,8 +17,8 @@ func mains() error {
 	var ed readline.Editor
 
 	// Windows でエスケープシーケンスを有効にする
-	closer := colorable.EnableColorsStdout(nil)
-	defer closer()
+	//closer := colorable.EnableColorsStdout(nil)
+	//defer closer()
 	ed.Writer = colorable.NewColorableStdout()
 
 	// for example:
