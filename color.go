@@ -26,15 +26,11 @@ func (c *Coloring) Init() readline.ColorSequence {
 }
 
 func (c *Coloring) Next(ch rune) readline.ColorSequence {
-	const (
-		markerWhite = '▽'
-		markerBlack = '▼'
-	)
 	if ch == readline.CursorPositionDummyRune {
 		c.bits &^= whiteMarkerBit | blackMarkerBit
-	} else if ch == markerWhite {
+	} else if ch == markerWhiteRune {
 		c.bits |= whiteMarkerBit
-	} else if ch == markerBlack {
+	} else if ch == markerBlackRune {
 		c.bits |= blackMarkerBit
 	}
 	color := readline.SGR1(0)

@@ -19,8 +19,10 @@ func debug(text string) {
 }
 
 const (
-	markerWhite = "▽"
-	markerBlack = "▼"
+	markerWhiteRune = '▽'
+	markerBlackRune = '▼'
+	markerWhite     = string(markerWhiteRune)
+	markerBlack     = string(markerBlackRune)
 
 	msgHiragana = "[か]"
 	msgKatakana = "[カ]"
@@ -175,16 +177,19 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 		} else {
 			// 変換前に一旦戻す
 			B.ReplaceAndRepaint(markerPos, markerWhite+source)
+			replaceTriangle(B, markerPos, markerWhiteRune)
 			return readline.CONTINUE
 		}
 	}
 	current := 0
 	candidate, _, _ := strings.Cut(list[current], ";")
 	B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
+	replaceTriangle(B, markerPos, markerBlackRune)
 	for {
 		input, _ := B.GetKey()
 		if input == string(keys.CtrlG) {
 			B.ReplaceAndRepaint(markerPos, markerWhite+source)
+			replaceTriangle(B, markerPos, markerWhiteRune)
 			return readline.CONTINUE
 		} else if input < " " {
 			if len(postfix) > 0 && postfix[0] == '*' {
@@ -207,7 +212,9 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 					return readline.CONTINUE
 				} else {
 					// 変換前に一旦戻す
+
 					B.ReplaceAndRepaint(markerPos, markerWhite+source)
+					replaceTriangle(B, markerPos, markerWhiteRune)
 					return readline.CONTINUE
 				}
 			}
@@ -242,6 +249,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 								} else {
 									// 変換前に一旦戻す
 									B.ReplaceAndRepaint(markerPos, markerWhite+source)
+									replaceTriangle(B, markerPos, markerWhiteRune)
 									return readline.CONTINUE
 								}
 							}
@@ -255,6 +263,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 							}
 						} else if key == string(keys.CtrlG) {
 							B.ReplaceAndRepaint(markerPos, markerWhite+source)
+							replaceTriangle(B, markerPos, markerWhiteRune)
 							return readline.CONTINUE
 						}
 					}
@@ -262,15 +271,18 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 			} else {
 				candidate, _, _ = strings.Cut(list[current], ";")
 				B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
+				replaceTriangle(B, markerPos, markerBlackRune)
 			}
 		} else if input == "x" {
 			current--
 			if current < 0 {
 				B.ReplaceAndRepaint(markerPos, markerWhite+source)
+				replaceTriangle(B, markerPos, markerWhiteRune)
 				return readline.CONTINUE
 			}
 			candidate, _, _ = strings.Cut(list[current], ";")
 			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
+			replaceTriangle(B, markerPos, markerBlackRune)
 		} else if input == "X" {
 			prompt := fmt.Sprintf(`really purge "%s /%s/ "?(yes or no)`, source, list[current])
 			ans, err := M.ask(ctx, B, prompt, false)
@@ -333,15 +345,14 @@ func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Res
 		}
 		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
 	}
-	B.InsertAndRepaint(markerWhite)
+	insertTriangleAndRepaint(B, markerWhiteRune)
 	r := &_Romaji{kana: trig.M.kana, last: string(trig.Key)}
 	return r.Call(ctx, B)
 }
 
 func seekMarker(B *readline.Buffer) int {
 	for i := B.Cursor - 1; i >= 0; i-- {
-		ch := B.Buffer[i].String()
-		if ch == markerWhite || ch == markerBlack {
+		if _, ok := B.Buffer[i].Moji.(triangle); ok {
 			return i
 		}
 	}
@@ -419,7 +430,7 @@ func (M *Mode) cmdAbbrevMode(ctx context.Context, B *readline.Buffer) readline.R
 		return readline.CONTINUE
 	}
 	M.restoreKeyMap(B)
-	B.InsertAndRepaint(markerWhite)
+	insertTriangleAndRepaint(B, markerWhiteRune)
 	B.BindKey(" ", &readline.GoCommand{
 		Name: "SKK_ABBREV_START_HENKAN",
 		Func: func(ctx context.Context, B *readline.Buffer) readline.Result {
