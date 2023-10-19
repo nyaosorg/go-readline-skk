@@ -328,19 +328,20 @@ func (trig *_Trigger) Call(ctx context.Context, B *readline.Buffer) readline.Res
 		if index := strings.IndexByte("aiueo", trig.Key); index >= 0 {
 			postfix = trig.M.kana.table[string(trig.Key)]
 		} else {
-			B.InsertAndRepaint("*" + string(trig.Key))
+			trigKeyStr := string(trig.Key)
+			B.InsertAndRepaint("*" + trigKeyStr)
 			var typed strings.Builder
-			typed.WriteString(string(trig.Key))
+			typed.WriteString(trigKeyStr)
 			for {
 				key, _ := B.GetKey()
 				typed.WriteString(key)
-				if value, ok := trig.M.kana.table[typed.String()]; ok {
+				if value, ok := trig.M.kana.Query(typed.String()); ok {
 					return trig.M.henkanMode(ctx, B, markerPos, source.String(), value)
 				}
-				if len(key) != 1 || !unicode.IsLower(rune(key[0])) {
+				if len(key) != 1 || !unicode.IsLetter(rune(key[0])) {
 					return B.LookupCommand(key).Call(ctx, B)
 				}
-				B.InsertAndRepaint(key)
+				B.InsertAndRepaint(strings.ToLower(key))
 			}
 		}
 		return trig.M.henkanMode(ctx, B, markerPos, source.String(), postfix)
