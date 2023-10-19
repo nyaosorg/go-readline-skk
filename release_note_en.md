@@ -1,3 +1,5 @@
+- Fix the problem that `UTta` and `UTTa` were converted `打っtあ` and `▽う*t*t` instead of `打った`
+
 v0.3.0
 ======
 Oct 08 2023
