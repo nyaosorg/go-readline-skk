@@ -10,8 +10,10 @@ import (
 )
 
 type _Kana struct {
-	table    map[string]string
-	switchTo int
+	table        map[string]string
+	hiraKataSwTo int
+	hanzenSwTo   int
+	modeStr      string
 }
 
 func (K *_Kana) Query(romaji string) (string, bool) {
@@ -30,6 +32,8 @@ func (K *_Kana) Query(romaji string) (string, bool) {
 var kanaTable = []*_Kana{
 	hiragana,
 	katakana,
+	hankakuHiragana,
+	hankakuKatakana,
 }
 
 const romajiTrigger = "aiueokstnhmyrwfgzdbpcj',.-[]Qx"
@@ -88,7 +92,9 @@ var hiragana = &_Kana{
 
 		"xtsu": "っ",
 	},
-	switchTo: 1,
+	hiraKataSwTo: 1,
+	hanzenSwTo:   2,
+	modeStr:      msgHiragana,
 }
 
 var katakana = &_Kana{
@@ -145,7 +151,9 @@ var katakana = &_Kana{
 
 		"xtsu": "ッ",
 	},
-	switchTo: 0,
+	hiraKataSwTo: 0,
+	hanzenSwTo:   3,
+	modeStr:      msgKatakana,
 }
 
 var hankaku = map[string]string{
@@ -200,6 +208,20 @@ var hankaku = map[string]string{
 	"z<": "≦", "z>": "≧", "z?": "÷", "z_": "―",
 
 	"xtsu": "ｯ",
+}
+
+var hankakuHiragana = &_Kana{
+	table:        hankaku,
+	hiraKataSwTo: 1,
+	hanzenSwTo:   0,
+	modeStr:      msgHankaku,
+}
+
+var hankakuKatakana = &_Kana{
+	table:        hankaku,
+	hiraKataSwTo: 1,
+	hanzenSwTo:   1,
+	modeStr:      msgHankaku,
 }
 
 type _Romaji struct {

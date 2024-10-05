@@ -26,6 +26,7 @@ const (
 
 	msgHiragana = "[か]"
 	msgKatakana = "[カ]"
+	msgHankaku  = "[ﾊﾝ]"
 	msgLatin    = ""
 	msgAbbrev   = "[aあ]"
 	msg0208     = "[英]"
@@ -417,12 +418,14 @@ func (m *Mode) cmdToggleKana(_ context.Context, B *readline.Buffer) readline.Res
 		return readline.CONTINUE
 
 	}
-	m.enable(B, kanaTable[m.kana.switchTo])
-	if m.kana.switchTo == 1 {
-		m.displayMode(B, msgHiragana)
-	} else {
-		m.displayMode(B, msgKatakana)
-	}
+	m.enable(B, kanaTable[m.kana.hiraKataSwTo])
+	m.displayMode(B, m.kana.modeStr)
+	return readline.CONTINUE
+}
+
+func (m *Mode) cmdToggleHanKana(_ context.Context, B *readline.Buffer) readline.Result {
+	m.enable(B, kanaTable[m.kana.hanzenSwTo])
+	m.displayMode(B, m.kana.modeStr)
 	return readline.CONTINUE
 }
 
@@ -498,6 +501,7 @@ func (mode *Mode) enable(X canKeyMap, K *_Kana) {
 	X.BindKey("Q", &readline.GoCommand{Name: "SKK_INSERT_MARKER", Func: cmdInsertMarkerWhite})
 	X.BindKey("\\", &readline.GoCommand{Name: "SKK_CODE_MODE", Func: mode.cmdCodeMode})
 	X.BindKey("q", &readline.GoCommand{Name: "SKK_TOGGLE_KANA", Func: mode.cmdToggleKana})
+	X.BindKey("\x11", &readline.GoCommand{Name: "SKK_TOGGLE_HANKANA", Func: mode.cmdToggleHanKana})
 	X.BindKey("/", &readline.GoCommand{Name: "SKK_ABBREV_MODE", Func: mode.cmdAbbrevMode})
 	X.BindKey(" ", &readline.GoCommand{Name: "SKK_START_HENKAN", Func: mode.cmdStartHenkan})
 	X.BindKey("l", &readline.GoCommand{Name: "SKK_LATIN_MODE", Func: mode.cmdLatinMode})
