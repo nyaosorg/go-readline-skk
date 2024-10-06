@@ -1,3 +1,5 @@
+- Implement the Hankaku-Kana mode (Ctrl-Q)
+
 v0.3.1
 ======
 Oct 19 2023
