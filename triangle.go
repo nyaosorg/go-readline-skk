@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unicode/utf8"
 
 	"github.com/nyaosorg/go-readline-ny"
 )
@@ -33,6 +34,10 @@ func (tr triangle) Width() readline.WidthT {
 	} else {
 		return 2
 	}
+}
+
+func (tr triangle) Len() int {
+	return utf8.RuneLen(rune(tr))
 }
 
 func insertTriangleAndRepaint(B *readline.Buffer, c triangle) {
