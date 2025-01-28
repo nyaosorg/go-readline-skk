@@ -1,3 +1,7 @@
+v0.5.0
+======
+Jan 29 2025
+
 - Support the new syntax highlighting of go-readline-ny v1.7.4 (See also example2.go)
 
 v0.4.2
