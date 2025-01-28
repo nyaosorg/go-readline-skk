@@ -32,7 +32,12 @@ func mains() error {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 		} else {
-			ed.Coloring = &skk.Coloring{}
+			ed.Highlight = []readline.Highlight{
+				skk.WhiteMarkerHighlight,
+				skk.BlackMarkerHighlight,
+			}
+			ed.ResetColor = "\x1B[0m"
+			ed.DefaultColor = "\x1B[0;1m"
 			defer func() {
 				err := skkMode.SaveUserJisyo()
 				if err != nil {
