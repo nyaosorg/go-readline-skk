@@ -3,6 +3,7 @@ module github.com/nyaosorg/go-readline-skk
 go 1.20
 
 require (
+	github.com/hymkor/sxencode-go v0.2.3
 	github.com/mattn/go-colorable v0.1.14
 	golang.org/x/text v0.21.0
 	github.com/nyaosorg/go-readline-ny v1.9.0
