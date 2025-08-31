@@ -236,6 +236,17 @@ func parseSx(source string) candidateT {
 			source: source,
 			f:      func() string { return s },
 		}
+	case "pwd":
+		return &candidateFuncT{
+			source: source,
+			f: func() string {
+				wd, err := os.Getwd()
+				if err != nil {
+					return source
+				}
+				return wd
+			},
+		}
 	}
 	return candidateStringT(source)
 }
