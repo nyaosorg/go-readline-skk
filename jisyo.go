@@ -25,25 +25,59 @@ const (
 
 type _History struct {
 	key string
-	val []string
+	val []candidateT
+}
+
+type candidateT interface {
+	String() string
+	Source() string
+}
+
+type candidateStringT string
+
+func (c candidateStringT) String() string { return string(c) }
+func (c candidateStringT) Source() string { return string(c) }
+
+type candidateFuncT struct {
+	source string
+	f      func() string
+}
+
+func (c *candidateFuncT) Source() string { return c.source }
+func (c *candidateFuncT) String() string { return c.f() }
+
+var encodeCandidate = strings.NewReplacer(
+	`/`, `\057`,
+	`"`, `\"`,
+	`\`, `\\`,
+)
+
+func newCandidateString(s string) candidateT {
+	if !strings.ContainsRune(s, '/') {
+		return candidateStringT(s)
+	}
+	return &candidateFuncT{
+		source: fmt.Sprintf(`(concat "%s")`, encodeCandidate.Replace(s)),
+		f:      func() string { return s },
+	}
 }
 
 // Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo struct {
-	ari         map[string][]string
-	nasi        map[string][]string
+	ari         map[string][]candidateT
+	nasi        map[string][]candidateT
 	ariHistory  []_History
 	nasiHistory []_History
 }
 
 func newJisyo() *Jisyo {
 	return &Jisyo{
-		ari:  map[string][]string{},
-		nasi: map[string][]string{},
+		ari:  map[string][]candidateT{},
+		nasi: map[string][]candidateT{},
 	}
 }
 
-func (j *Jisyo) lookup(key string, okuri bool) (candidates []string, ok bool) {
+func (j *Jisyo) lookup(key string, okuri bool) (candidates []candidateT, ok bool) {
 	if okuri {
 		candidates, ok = j.ari[key]
 	} else {
@@ -52,7 +86,7 @@ func (j *Jisyo) lookup(key string, okuri bool) (candidates []string, ok bool) {
 	return
 }
 
-func (j *Jisyo) store(key string, okuri bool, value []string) {
+func (j *Jisyo) store(key string, okuri bool, value []candidateT) {
 	if okuri {
 		j.ari[key] = value
 	} else {
@@ -60,7 +94,7 @@ func (j *Jisyo) store(key string, okuri bool, value []string) {
 	}
 }
 
-func (j *Jisyo) storeAndLearn(key string, okuri bool, value []string) {
+func (j *Jisyo) storeAndLearn(key string, okuri bool, value []candidateT) {
 	j.store(key, okuri, value)
 	if okuri {
 		j.ariHistory = append(j.ariHistory, _History{key: key, val: value})
@@ -159,10 +193,10 @@ var parser1 = &parser.Parser[any]{
 
 var rxEscSeq = regexp.MustCompile(`\\[0-9]+`)
 
-func parseSx(source string) string {
+func parseSx(source string) candidateT {
 	sxpr, err := parser1.Read(strings.NewReader(source))
 	if err != nil {
-		return source
+		return candidateStringT(source)
 	}
 	list := []any{}
 	for {
@@ -174,11 +208,11 @@ func parseSx(source string) string {
 		sxpr = c.cdr
 	}
 	if len(list) < 1 {
-		return source
+		return candidateStringT(source)
 	}
 	sym, ok := list[0].(symbol)
 	if !ok {
-		return source
+		return candidateStringT(source)
 	}
 	switch sym.value {
 	case "concat":
@@ -198,9 +232,12 @@ func parseSx(source string) string {
 			b.WriteRune(oct)
 			return b.String()
 		})
-		return s
+		return &candidateFuncT{
+			source: source,
+			f:      func() string { return s },
+		}
 	}
-	return source
+	return candidateStringT(source)
 }
 
 func (j *Jisyo) readOne(line string, okuri bool) bool {
@@ -224,9 +261,10 @@ func (j *Jisyo) readOne(line string, okuri bool) bool {
 		one, rest, ok := strings.Cut(lists, "/")
 		if one != "" {
 			if len(one) > 2 && one[0] == '(' && one[len(one)-1] == ')' {
-				one = parseSx(one)
+				values = append(values, parseSx(one))
+			} else {
+				values = append(values, candidateStringT(one))
 			}
-			values = append(values, one)
 		}
 		if !ok {
 			break
@@ -292,13 +330,16 @@ func (j *Jisyo) Read(r io.Reader) error {
 	return sc.Err()
 }
 
-func dumpPair(key string, list []string, w io.Writer) (n int64, err error) {
+func dumpPair(key string, list []candidateT, w io.Writer) (n int64, err error) {
 	var wc writeCounter
 	if wc.Try(io.WriteString(w, key)) || wc.Try(io.WriteString(w, " /")) {
 		return wc.Result()
 	}
 	for _, candidate := range list {
-		if wc.Try(io.WriteString(w, candidate)) || wc.Try(io.WriteString(w, "/")) {
+		if wc.Try(io.WriteString(w, candidate.Source())) {
+			return wc.Result()
+		}
+		if wc.Try(io.WriteString(w, "/")) {
 			return wc.Result()
 		}
 	}

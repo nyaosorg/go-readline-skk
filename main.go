@@ -86,7 +86,7 @@ func hanToZenString(s string) string {
 	return buffer.String()
 }
 
-func (M *Mode) _lookup(source string, okuri bool) ([]string, bool) {
+func (M *Mode) _lookup(source string, okuri bool) ([]candidateT, bool) {
 	list, ok := M.User.lookup(source, okuri)
 	if ok {
 		return list, true
@@ -95,7 +95,7 @@ func (M *Mode) _lookup(source string, okuri bool) ([]string, bool) {
 	return list, ok
 }
 
-func (M *Mode) lookup(source string, okuri bool) ([]string, bool) {
+func (M *Mode) lookup(source string, okuri bool) ([]candidateT, bool) {
 	list, ok := M._lookup(source, okuri)
 	if ok {
 		return list, ok
@@ -110,9 +110,10 @@ func (M *Mode) lookup(source string, okuri bool) ([]string, bool) {
 	if !ok {
 		return nil, false
 	}
-	newList := make([]string, 0, len(list))
+	newList := make([]candidateT, 0, len(list))
 	for _, s := range list {
-		tmp := rxToNumber.ReplaceAllStringFunc(s, func(ss string) string {
+		source := s.String()
+		tmp := rxToNumber.ReplaceAllStringFunc(source, func(ss string) string {
 			switch ss[1] {
 			case '0': // 無変換
 				return number
@@ -126,13 +127,17 @@ func (M *Mode) lookup(source string, okuri bool) ([]string, bool) {
 				return number
 			}
 		})
-		newList = append(newList, tmp)
+		if source != tmp {
+			newList = append(newList, newCandidateString(tmp))
+		}
+		newList = append(newList, s)
 	}
 	return newList, true
 }
 
-func unshift(list []string, value string) []string {
-	list = append(list, "")
+func unshift(list []candidateT, value candidateT) []candidateT {
+	var dummy candidateT
+	list = append(list, dummy)
 	copy(list[1:], list)
 	list[0] = value
 	return list
@@ -148,18 +153,18 @@ func (M *Mode) newCandidate(ctx context.Context, B *readline.Buffer, source stri
 
 	// 二重登録よけ
 	for _, candidate := range list {
-		if candidate == newWord {
+		if candidate.String() == newWord {
 			return newWord, true
 		}
 	}
 	// リストの先頭に挿入
-	M.User.storeAndLearn(source, okuri, unshift(list, newWord))
+	M.User.storeAndLearn(source, okuri, unshift(list, newCandidateString(newWord)))
 	return newWord, true
 }
 
 const listingStartIndex = 4
 
-func moveTop(list []string, current int) {
+func moveTop(list []candidateT, current int) {
 	newTop := list[current]
 	copy(list[1:current+1], list[:current])
 	list[0] = newTop
@@ -183,7 +188,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 		}
 	}
 	current := 0
-	candidate, _, _ := strings.Cut(list[current], ";")
+	candidate, _, _ := strings.Cut(list[current].String(), ";")
 	B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 	replaceTriangle(B, markerPos, markerBlackRune)
 	for {
@@ -227,7 +232,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 						if _current >= len(list) {
 							break
 						}
-						candidate, _, _ = strings.Cut(list[_current], ";")
+						candidate, _, _ = strings.Cut(list[_current].String(), ";")
 						fmt.Fprintf(&buffer, "%c:%s ", key, candidate)
 						_current++
 					}
@@ -235,7 +240,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 					key, err := M.ask1(B, buffer.String())
 					if err == nil {
 						if index := strings.Index("asdfjkl", key); index >= 0 && current+index < len(list) {
-							candidate, _, _ = strings.Cut(list[current+index], ";")
+							candidate, _, _ = strings.Cut(list[current+index].String(), ";")
 							B.ReplaceAndRepaint(markerPos, candidate)
 							return readline.CONTINUE
 						} else if key == " " {
@@ -270,7 +275,7 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 					}
 				}
 			} else {
-				candidate, _, _ = strings.Cut(list[current], ";")
+				candidate, _, _ = strings.Cut(list[current].String(), ";")
 				B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 				replaceTriangle(B, markerPos, markerBlackRune)
 			}
@@ -281,11 +286,11 @@ func (M *Mode) henkanMode(ctx context.Context, B *readline.Buffer, markerPos int
 				replaceTriangle(B, markerPos, markerWhiteRune)
 				return readline.CONTINUE
 			}
-			candidate, _, _ = strings.Cut(list[current], ";")
+			candidate, _, _ = strings.Cut(list[current].String(), ";")
 			B.ReplaceAndRepaint(markerPos, markerBlack+candidate+postfix)
 			replaceTriangle(B, markerPos, markerBlackRune)
 		} else if input == "X" {
-			prompt := fmt.Sprintf(`really purge "%s /%s/ "?(yes or no)`, source, list[current])
+			prompt := fmt.Sprintf(`really purge "%s /%s/ "?(yes or no)`, source, list[current].Source())
 			ans, err := M.ask(ctx, B, prompt, false)
 			if err == nil {
 				if ans == "y" || ans == "yes" {
