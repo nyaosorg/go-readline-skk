@@ -199,10 +199,6 @@ func parseSx(source string) string {
 			return b.String()
 		})
 		return s
-	case "pwd":
-		if cwd, err := os.Getwd(); err == nil {
-			return cwd
-		}
 	}
 	return source
 }
