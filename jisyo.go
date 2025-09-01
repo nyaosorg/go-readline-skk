@@ -254,6 +254,13 @@ func parseSx(source string) candidateT {
 				return time.Now().Format(time.ANSIC)
 			},
 		}
+	case "skk-current-date":
+		return &candidateFuncT{
+			source: source,
+			f: func() string {
+				return time.Now().Format("2006年01月02日")
+			},
+		}
 	}
 	return candidateStringT(source)
 }
