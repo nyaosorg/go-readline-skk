@@ -1,3 +1,5 @@
+- SKK-JISYO.L などで変換候補で emacslisp で書かれたものについて `(concat)`,`(pwd)`,`(substring)`, `(skk-current-date)` 程度は評価できるようにした
+
 v0.5.0
 ======
 Jan 29 2025

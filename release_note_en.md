@@ -1,3 +1,5 @@
+- Enable evaluation of basic Emacs Lisp expressions in SKK dictionaries, such as `(concat)`, `(pwd)`, `(substring)`, and `(skk-current-date)`.
+
 v0.5.0
 ======
 Jan 29 2025
