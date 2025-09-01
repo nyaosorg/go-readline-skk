@@ -106,11 +106,31 @@ func funCurrentDate([]any) (any, error) {
 	return time.Now().Format("2006年01月02日"), nil
 }
 
+func funSubstring(args []any) (any, error) {
+	if len(args) != 3 {
+		return nil, errors.New("substr: argc error")
+	}
+	s, ok := args[0].(string)
+	if !ok {
+		return nil, errors.New("substr: not a string")
+	}
+	start, ok := args[1].(int64)
+	if !ok || start < 0 || start >= int64(len(s)) {
+		return nil, fmt.Errorf("substr: start index: %v (len=%d)", args[1], len(s))
+	}
+	end, ok := args[2].(int64)
+	if !ok || end < start || end >= int64(len(s)) {
+		return nil, fmt.Errorf("substr: end index: %v (len=%d)", args[2], len(s))
+	}
+	return s[start:end], nil
+}
+
 var lispFunctions = map[string]func([]any) (any, error){
 	"concat":              funConcat,
 	"pwd":                 funPwd,
 	"current-time-string": funCurrentTimeString,
 	"skk-current-date":    funCurrentDate,
+	"substring":           funSubstring,
 }
 
 func evalSxString(source string) candidateT {
