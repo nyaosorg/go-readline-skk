@@ -1,6 +1,8 @@
 package skk
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"regexp"
@@ -41,74 +43,89 @@ var parser1 = &parser.Parser[any]{
 
 var rxEscSeq = regexp.MustCompile(`\\[0-9]+`)
 
-func evalSxString(source string) candidateT {
-	sxpr, err := parser1.Read(strings.NewReader(source))
-	if err != nil {
-		return candidateStringT(source)
-	}
+func evalSxList(funcs map[string]func([]any) (any, error), sxpr any) (any, error) {
 	list := []any{}
 	for {
 		c, ok := sxpr.(*cons)
 		if !ok {
 			break
 		}
-		list = append(list, c.car)
+		if cc, ok := c.car.(*cons); ok {
+			result, err := evalSxList(funcs, cc)
+			if err != nil {
+				return nil, err
+			}
+			list = append(list, result)
+		} else {
+			list = append(list, c.car)
+		}
 		sxpr = c.cdr
 	}
 	if len(list) < 1 {
-		return candidateStringT(source)
+		return nil, errors.New("too few arguments")
 	}
 	sym, ok := list[0].(symbol)
 	if !ok {
+		return nil, errors.New("not a symbol")
+	}
+	if f, ok := funcs[sym.value]; ok {
+		return f(list[1:])
+	}
+	return nil, errors.New("no such a function")
+}
+
+func funConcat(args []any) (any, error) {
+	var buffer strings.Builder
+	for _, v := range args {
+		if s, ok := v.(string); ok {
+			buffer.WriteString(s)
+		}
+	}
+	s := buffer.String()
+	s = rxEscSeq.ReplaceAllStringFunc(s, func(ss string) string {
+		var oct rune = 0
+		var b strings.Builder
+		for _, c := range ss[1:] {
+			oct = (oct * 8) + (c - '0')
+		}
+		b.WriteRune(oct)
+		return b.String()
+	})
+	return s, nil
+}
+
+func funPwd([]any) (any, error) {
+	return os.Getwd()
+}
+
+func funCurrentTimeString([]any) (any, error) {
+	return time.Now().Format(time.ANSIC), nil
+}
+
+func funCurrentDate([]any) (any, error) {
+	return time.Now().Format("2006年01月02日"), nil
+}
+
+var lispFunctions = map[string]func([]any) (any, error){
+	"concat":              funConcat,
+	"pwd":                 funPwd,
+	"current-time-string": funCurrentTimeString,
+	"skk-current-date":    funCurrentDate,
+}
+
+func evalSxString(source string) candidateT {
+	sxpr, err := parser1.Read(strings.NewReader(source))
+	if err != nil {
 		return candidateStringT(source)
 	}
-	switch sym.value {
-	case "concat":
-		var buffer strings.Builder
-		for _, v := range list[1:] {
-			if s, ok := v.(string); ok {
-				buffer.WriteString(s)
+	return &candidateFuncT{
+		source: source,
+		f: func() string {
+			result, err := evalSxList(lispFunctions, sxpr)
+			if err != nil {
+				return source
 			}
-		}
-		s := buffer.String()
-		s = rxEscSeq.ReplaceAllStringFunc(s, func(ss string) string {
-			var oct rune = 0
-			var b strings.Builder
-			for _, c := range ss[1:] {
-				oct = (oct * 8) + (c - '0')
-			}
-			b.WriteRune(oct)
-			return b.String()
-		})
-		return &candidateFuncT{
-			source: source,
-			f:      func() string { return s },
-		}
-	case "pwd": // `/pwd`
-		return &candidateFuncT{
-			source: source,
-			f: func() string {
-				wd, err := os.Getwd()
-				if err != nil {
-					return source
-				}
-				return wd
-			},
-		}
-	case "current-time-string": // `/now`, `/time`
-		return &candidateFuncT{
-			source: source,
-			f: func() string {
-				return time.Now().Format(time.ANSIC)
-			},
-		}
-	case "skk-current-date":
-		return &candidateFuncT{
-			source: source,
-			f: func() string {
-				return time.Now().Format("2006年01月02日")
-			},
-		}
+			return fmt.Sprint(result)
+		},
 	}
-	return candidateStringT(source)
 }
