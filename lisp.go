@@ -125,12 +125,17 @@ func funSubstring(args []any) (any, error) {
 	return s[start:end], nil
 }
 
+func funSkkVersion(args []any) (any, error) {
+	return "go-readline-skk", nil
+}
+
 var lispFunctions = map[string]func([]any) (any, error){
 	"concat":              funConcat,
 	"pwd":                 funPwd,
 	"current-time-string": funCurrentTimeString,
 	"skk-current-date":    funCurrentDate,
 	"substring":           funSubstring,
+	"skk-version":         funSkkVersion,
 }
 
 func evalSxString(source string) candidateT {
