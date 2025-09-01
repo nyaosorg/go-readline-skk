@@ -236,7 +236,7 @@ func parseSx(source string) candidateT {
 			source: source,
 			f:      func() string { return s },
 		}
-	case "pwd":
+	case "pwd": // `/pwd`
 		return &candidateFuncT{
 			source: source,
 			f: func() string {
@@ -245,6 +245,13 @@ func parseSx(source string) candidateT {
 					return source
 				}
 				return wd
+			},
+		}
+	case "current-time-string": // `/now`, `/time`
+		return &candidateFuncT{
+			source: source,
+			f: func() string {
+				return time.Now().Format(time.ANSIC)
 			},
 		}
 	}
