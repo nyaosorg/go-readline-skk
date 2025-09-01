@@ -128,7 +128,7 @@ func (M *Mode) lookup(source string, okuri bool) ([]candidateT, bool) {
 			}
 		})
 		if source != tmp {
-			newList = append(newList, newCandidateString(tmp))
+			newList = append(newList, candidateStringT(tmp))
 		}
 		newList = append(newList, s)
 	}
@@ -158,7 +158,7 @@ func (M *Mode) newCandidate(ctx context.Context, B *readline.Buffer, source stri
 		}
 	}
 	// リストの先頭に挿入
-	M.User.storeAndLearn(source, okuri, unshift(list, newCandidateString(newWord)))
+	M.User.storeAndLearn(source, okuri, unshift(list, candidateStringT(newWord)))
 	return newWord, true
 }
 

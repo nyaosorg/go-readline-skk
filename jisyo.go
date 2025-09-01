@@ -33,7 +33,20 @@ type candidateT interface {
 type candidateStringT string
 
 func (c candidateStringT) String() string { return string(c) }
-func (c candidateStringT) Source() string { return string(c) }
+
+var encodeCandidate = strings.NewReplacer(
+	`/`, `\057`,
+	`"`, `\"`,
+	`\`, `\\`,
+)
+
+func (c candidateStringT) Source() string {
+	s := string(c)
+	if strings.ContainsRune(s, '/') {
+		return fmt.Sprintf(`(concat "%s")`, encodeCandidate.Replace(s))
+	}
+	return s
+}
 
 type candidateFuncT struct {
 	source string
@@ -42,22 +55,6 @@ type candidateFuncT struct {
 
 func (c *candidateFuncT) Source() string { return c.source }
 func (c *candidateFuncT) String() string { return c.f() }
-
-var encodeCandidate = strings.NewReplacer(
-	`/`, `\057`,
-	`"`, `\"`,
-	`\`, `\\`,
-)
-
-func newCandidateString(s string) candidateT {
-	if !strings.ContainsRune(s, '/') {
-		return candidateStringT(s)
-	}
-	return &candidateFuncT{
-		source: fmt.Sprintf(`(concat "%s")`, encodeCandidate.Replace(s)),
-		f:      func() string { return s },
-	}
-}
 
 // Jisyo is a dictionary that contains user or system dictionary.
 type Jisyo struct {
