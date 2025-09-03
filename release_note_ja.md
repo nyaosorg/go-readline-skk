@@ -1,4 +1,5 @@
-- SKK-JISYO.L などで変換候補で emacslisp で書かれたものについて `(concat)`,`(pwd)`,`(substring)`, `(skk-current-date)` 程度は評価できるようにした
+- 変換結果にスラッシュを含む単語も変換・単語登録できるようにした
+- emacslisp で書かれた変換結果について `(concat)`, `(pwd)`, `(substring)`, `(skk-current-date)` 程度は評価できるようにした (`(lambda)` はまだ)
 
 v0.5.0
 ======

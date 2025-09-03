@@ -1,4 +1,5 @@
-- Enable evaluation of basic Emacs Lisp expressions in SKK dictionaries, such as `(concat)`, `(pwd)`, `(substring)`, and `(skk-current-date)`.
+- Enabled conversion and word registration for words containing slashes in the conversion result
+- Added support for evaluating certain Emacs Lisp forms in conversion results, such as `(concat)`, `(pwd)`, `(substring)`, and `(skk-current-date)` (but not `(lambda)` yet)
 
 v0.5.0
 ======
