@@ -95,6 +95,33 @@ func (M *Mode) _lookup(source string, okuri bool) ([]candidateT, bool) {
 	return list, ok
 }
 
+func applyCandidateNumber(c candidateT, number string) candidateT {
+	source := c.String()
+	result := rxToNumber.ReplaceAllStringFunc(source, func(ss string) string {
+		switch ss[1] {
+		case '0': // 無変換
+			return number
+		case '1': // 全角化
+			return hanToZenString(number)
+		case '2': // 漢数字で位取りあり
+			return numberToKanji(number)
+		case '3': // 漢数字で位取りなし
+			return numberToKanji(number) // あとでやる
+		default:
+			return number
+		}
+	})
+	if source == result {
+		return c
+	}
+	return &candidateFuncT{
+		source: c.Source(),
+		f: func() string {
+			return result
+		},
+	}
+}
+
 func (M *Mode) lookup(source string, okuri bool) ([]candidateT, bool) {
 	list, ok := M._lookup(source, okuri)
 	if ok {
@@ -111,26 +138,8 @@ func (M *Mode) lookup(source string, okuri bool) ([]candidateT, bool) {
 		return nil, false
 	}
 	newList := make([]candidateT, 0, len(list))
-	for _, s := range list {
-		source := s.String()
-		tmp := rxToNumber.ReplaceAllStringFunc(source, func(ss string) string {
-			switch ss[1] {
-			case '0': // 無変換
-				return number
-			case '1': // 全角化
-				return hanToZenString(number)
-			case '2': // 漢数字で位取りあり
-				return numberToKanji(number)
-			case '3': // 漢数字で位取りなし
-				return numberToKanji(number) // あとでやる
-			default:
-				return number
-			}
-		})
-		if source != tmp {
-			newList = append(newList, candidateStringT(tmp))
-		}
-		newList = append(newList, s)
+	for _, c := range list {
+		newList = append(newList, applyCandidateNumber(c, number))
 	}
 	return newList, true
 }
