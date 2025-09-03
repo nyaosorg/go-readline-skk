@@ -1,3 +1,7 @@
+v0.6.0
+======
+Sep 3, 2025
+
 - Enabled conversion and word registration for words containing slashes in the conversion result
 - Added support for evaluating certain Emacs Lisp forms in conversion results, such as `(concat)`, `(pwd)`, `(substring)`, and `(skk-current-date)` (but not `(lambda)` yet)
 
