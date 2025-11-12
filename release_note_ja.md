@@ -1,3 +1,8 @@
+- 依存モジュールの更新と staticcheck の警告へ対応 (#1)
+    - 非推奨だが互換性のため残している型`Coloring` を Deprecated 化した。
+    - `lisp.go` の staticcheck 問題(S1001)を修正。
+    - `go-readline-ny` を 1.12.3 へ更新。
+
 v0.6.0
 ======
 Sep 3, 2025

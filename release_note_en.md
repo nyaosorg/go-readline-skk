@@ -1,3 +1,8 @@
+- Maintenance: update dependencies and address staticcheck warnings (#1)
+    - Mark `Coloring` as deprecated for compatibility.
+    - Fix staticcheck issue (S1001) in `lisp.go`.
+    - Update dependency `go-readline-ny` to v1.12.3.
+
 v0.6.0
 ======
 Sep 3, 2025
