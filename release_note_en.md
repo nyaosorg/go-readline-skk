@@ -1,3 +1,7 @@
+v0.6.1
+======
+Nov 13, 2025
+
 - Maintenance: update dependencies and address staticcheck warnings (#1)
     - Mark `Coloring` as deprecated for compatibility.
     - Fix staticcheck issue (S1001) in `lisp.go`.

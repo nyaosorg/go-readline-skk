@@ -1,3 +1,7 @@
+v0.6.1
+======
+Nov 13, 2025
+
 - 依存モジュールの更新と staticcheck の警告へ対応 (#1)
     - 非推奨だが互換性のため残している型`Coloring` を Deprecated 化した。
     - `lisp.go` の staticcheck 問題(S1001)を修正。
