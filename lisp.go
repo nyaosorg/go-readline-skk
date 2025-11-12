@@ -79,9 +79,7 @@ var parser1 = &parser.Parser[any]{
 	String: func(s string) any { return rawStringToLispString.Replace(s) },
 	Array: func(list []any, dim []int) any {
 		array := make([]any, len(list))
-		for i, v := range list {
-			array[i] = v
-		}
+		copy(array, list)
 		return array
 	},
 	Keyword: func(s string) any { return s },
