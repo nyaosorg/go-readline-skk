@@ -4,6 +4,7 @@ import (
 	"github.com/nyaosorg/go-readline-ny"
 )
 
+// Deprecated: Use []readline.Highlight{ skk.WhiteMarkerHighlight, skk.BlackMarkerHighlight } instead.
 type Coloring struct {
 	Base readline.Coloring
 	bits int
