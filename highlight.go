@@ -15,15 +15,18 @@ func (uc untilCursor) FindAllStringIndex(str string, n int) [][]int {
 }
 
 var (
-	whiteMarkerPattern = untilCursor{pattern: regexp.MustCompile(`▽.*?$`)}
-	blackMarkerPattern = untilCursor{pattern: regexp.MustCompile(`▼.*?$`)}
+	triangleOutlinePattern = untilCursor{pattern: regexp.MustCompile(`▽.*?$`)}
+	triangleFilledPattern  = untilCursor{pattern: regexp.MustCompile(`▼.*?$`)}
 
-	WhiteMarkerHighlight = readline.Highlight{
-		Pattern:  whiteMarkerPattern,
+	TriangleOutlineHighlight = readline.Highlight{
+		Pattern:  triangleOutlinePattern,
 		Sequence: "\x1B[0;1;7m", // reverse
 	}
-	BlackMarkerHighlight = readline.Highlight{
-		Pattern:  blackMarkerPattern,
+	WhiteMarkerHighlight = TriangleOutlineHighlight
+
+	TriangleFilledHighlight = readline.Highlight{
+		Pattern:  triangleFilledPattern,
 		Sequence: "\x1B[0;1;4m", // underline
 	}
+	BlackMarkerHighlight = TriangleFilledHighlight
 )
