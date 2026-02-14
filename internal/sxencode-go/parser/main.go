@@ -249,7 +249,7 @@ func (p *Parser[N]) readNode(rs io.RuneScanner) (N, error) {
 			val = ' '
 		default:
 			if len(token) >= 3 && token[2] == 'U' && len(token[2:]) > 1 {
-				if _val, err := strconv.ParseUint(token[3:], 16, 32); err == nil {
+				if _val, err := strconv.ParseInt(token[3:], 16, 32); err == nil {
 					val = rune(_val)
 					break
 				}
