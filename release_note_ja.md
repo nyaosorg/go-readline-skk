@@ -1,3 +1,7 @@
+- SKKの変換状態を示すマーカー（▽および▼）のハイライト定数を、色ベースの名称から形状ベースの名称に変更 (#2)
+  - `WhiteMarkerHighlight` → `TriangleOutlineHighlight` (▽: 中抜き三角形)
+  - `BlackMarkerHighlight` → `TriangleFilledHighlight` (▼: 塗りつぶし三角形)
+
 v0.6.1
 ======
 Nov 13, 2025
