@@ -1,3 +1,7 @@
+- The highlighting constants for SKK markers have been renamed to describe their visual shapes (▽ and ▼) rather than their colors. (#2)
+  - `WhiteMarkerHighlight` → `TriangleOutlineHighlight` (▽)
+  - `BlackMarkerHighlight` → `TriangleFilledHighlight` (▼)
+
 v0.6.1
 ======
 Nov 13, 2025
