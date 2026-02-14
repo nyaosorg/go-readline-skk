@@ -1,6 +1,10 @@
 Release notes
 =============
 
+v0.6.2
+------
+Feb 15, 2026
+
 - The highlighting constants for SKK markers have been renamed to describe their visual shapes (▽ and ▼) rather than their colors. (#2)
   - `WhiteMarkerHighlight` → `TriangleOutlineHighlight` (▽)
   - `BlackMarkerHighlight` → `TriangleFilledHighlight` (▼)
