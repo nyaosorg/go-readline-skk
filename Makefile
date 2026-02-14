@@ -1,6 +1,24 @@
+ifeq ($(OS),Windows_NT)
+    SHELL=CMD.EXE
+    SET=set
+    WHICH=where.exe
+    DEL=del
+    NUL=nul
+else
+    SET=export
+    WHICH=which
+    DEL=rm
+    NUL=/dev/null
+endif
+
+ifndef GO
+    SUPPORTGO=go1.20.14
+    GO:=$(shell $(WHICH) $(SUPPORTGO) 2>$(NUL) || echo go)
+endif
+
 all:
-	go fmt
-	go build
+	$(GO) fmt ./...
+	$(GO) build
 
 setup: SKK-JISYO.L SKK-JISYO.emoji
 

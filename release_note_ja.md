@@ -2,6 +2,9 @@
   - `WhiteMarkerHighlight` → `TriangleOutlineHighlight` (▽: 中抜き三角形)
   - `BlackMarkerHighlight` → `TriangleFilledHighlight` (▼: 塗りつぶし三角形)
 - 外部依存ライブラリ `github.com/hymkor/sxencode-go` を `internal` パッケージに統合した (#3)
+- Makefile の改善 (#4)
+  - UNIX系OSおよび Windows の両環境へ対応 
+  - go1.20.14 があれば優先的に使用し、ない場合は標準の go コマンドを使用する
 
 v0.6.1
 ======

@@ -2,6 +2,9 @@
   - `WhiteMarkerHighlight` → `TriangleOutlineHighlight` (▽)
   - `BlackMarkerHighlight` → `TriangleFilledHighlight` (▼)
 - Integrated `github.com/hymkor/sxencode-go` into the `internal` package. (#3)
+- Improved Makefile (#4)
+  - Cross-platform support: Enhanced compatibility across UNIX-like systems and Windows.
+  - The build process now prioritizes go1.20.14 while falling back to the default go command if unavailable.
 
 v0.6.1
 ======
