@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hymkor/sxencode-go/parser"
+	"github.com/nyaosorg/go-readline-skk/internal/sxencode-go/parser"
 )
 
 type symbol struct {
