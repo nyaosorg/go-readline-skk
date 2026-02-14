@@ -485,7 +485,7 @@ func (mode *Mode) cmdCodeMode(ctx context.Context, B *readline.Buffer) readline.
 		}
 		m := rxUnicodeCode.FindStringSubmatch(codeStr)
 		if m != nil {
-			value, err := strconv.ParseUint(m[1], 16, 32)
+			value, err := strconv.ParseInt(m[1], 16, 32)
 			if err == nil {
 				B.InsertAndRepaint(string(rune(value)))
 				B.Out.Flush()
